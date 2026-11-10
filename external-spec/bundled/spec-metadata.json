@@ -1,0 +1,2512 @@
+{
+  "schemaVersion": "2.0.0",
+  "specHash": "sha256:16b66ff027cc95113a885d11596ecac0aacfe6d82ad3fc3a768bda5f701c9680",
+  "semanticKeys": [
+    {
+      "name": "CatalogAssetKey",
+      "semanticType": "CatalogAssetKey",
+      "category": "other",
+      "description": "System-generated key for a catalog asset.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "CatalogAssetKey"
+      },
+      "examples": [
+        "1e8f0c3a-5b6d-4f2e-9c1a-2d3e4f5a6b7c"
+      ],
+      "extensions": {
+        "x-semantic-type": "CatalogAssetKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "catalog-asset-key"
+    },
+    {
+      "name": "FileKey",
+      "semanticType": "FileKey",
+      "category": "other",
+      "description": "System-generated key for a file.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "FileKey"
+      },
+      "examples": [
+        "1eadb755-662f-43bd-81d1-cf36f39a0a03"
+      ],
+      "extensions": {
+        "x-semantic-type": "FileKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "file-key"
+    },
+    {
+      "name": "FolderKey",
+      "semanticType": "FolderKey",
+      "category": "other",
+      "description": "System-generated key for a folder.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "FolderKey"
+      },
+      "examples": [
+        "3e98d77b-799b-4f31-bfc4-4c5829fc7dee"
+      ],
+      "extensions": {
+        "x-semantic-type": "FolderKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "folder-key"
+    },
+    {
+      "name": "MemberEmail",
+      "semanticType": "MemberEmail",
+      "category": "other",
+      "description": "The email address identifying a member.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "email"
+      },
+      "examples": [
+        "alice@example.com"
+      ],
+      "extensions": {
+        "x-semantic-type": "MemberEmail"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "member-email"
+    },
+    {
+      "name": "ProjectKey",
+      "semanticType": "ProjectKey",
+      "category": "other",
+      "description": "System-generated key for a project.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "ProjectKey"
+      },
+      "examples": [
+        "28b47b0a-364c-4dbe-9836-41ab371c15b2"
+      ],
+      "extensions": {
+        "x-semantic-type": "ProjectKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "project-key"
+    },
+    {
+      "name": "ProjectSnapshotKey",
+      "semanticType": "ProjectSnapshotKey",
+      "category": "other",
+      "description": "System-generated key for a project snapshot.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "ProjectSnapshotKey"
+      },
+      "examples": [
+        "9c2f1b44-1f0e-4a9b-86bb-0d0a4a2c1f77"
+      ],
+      "extensions": {
+        "x-semantic-type": "ProjectSnapshotKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "project-snapshot-key"
+    },
+    {
+      "name": "VersionKey",
+      "semanticType": "VersionKey",
+      "category": "other",
+      "description": "System-generated key for a version.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "VersionKey"
+      },
+      "examples": [
+        "4afc38ec-ee23-49bb-9a36-92cdba3e75e7"
+      ],
+      "extensions": {
+        "x-semantic-type": "VersionKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "version-key"
+    },
+    {
+      "name": "WorkspaceKey",
+      "semanticType": "WorkspaceKey",
+      "category": "other",
+      "description": "System-generated key for a workspace.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "WorkspaceKey"
+      },
+      "examples": [
+        "0108f0ef-5c76-4a75-a602-45a9f04554fd"
+      ],
+      "extensions": {
+        "x-semantic-type": "WorkspaceKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "workspace-key"
+    }
+  ],
+  "unions": [
+    {
+      "name": "BasicStringFilterProperty",
+      "kind": "hybrid-union",
+      "description": "String property with basic advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "ref",
+          "ref": "BasicStringFilter"
+        }
+      ],
+      "stableId": "basic-string-filter-property"
+    },
+    {
+      "name": "DateTimeFilterProperty",
+      "kind": "hybrid-union",
+      "description": "Date-time property with full advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "ref",
+          "ref": "AdvancedDateTimeFilter"
+        }
+      ],
+      "stableId": "date-time-filter-property"
+    },
+    {
+      "name": "IntegerFilterProperty",
+      "kind": "hybrid-union",
+      "description": "Integer property with advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "ref",
+          "ref": "AdvancedIntegerFilter"
+        }
+      ],
+      "stableId": "integer-filter-property"
+    },
+    {
+      "name": "LongFilterProperty",
+      "kind": "hybrid-union",
+      "description": "Long property with advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "ref",
+          "ref": "AdvancedLongFilter"
+        }
+      ],
+      "stableId": "long-filter-property"
+    },
+    {
+      "name": "SearchQueryPage",
+      "kind": "union-wrapper",
+      "branches": [
+        {
+          "branchType": "ref",
+          "ref": "LimitPagination"
+        },
+        {
+          "branchType": "ref",
+          "ref": "OffsetPagination"
+        }
+      ],
+      "stableId": "search-query-page"
+    },
+    {
+      "name": "SearchQueryPageRequest",
+      "kind": "union-wrapper",
+      "description": "Pagination criteria. Uses offset-based pagination (from/limit).\n",
+      "branches": [
+        {
+          "branchType": "ref",
+          "ref": "LimitPagination"
+        },
+        {
+          "branchType": "ref",
+          "ref": "OffsetPagination"
+        }
+      ],
+      "stableId": "search-query-page-request"
+    },
+    {
+      "name": "StringFilterProperty",
+      "kind": "hybrid-union",
+      "description": "String property with full advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "ref",
+          "ref": "AdvancedStringFilter"
+        }
+      ],
+      "stableId": "string-filter-property"
+    }
+  ],
+  "arrays": [],
+  "eventuallyConsistentOps": [],
+  "operations": [
+    {
+      "operationId": "getClusterRegistrations",
+      "path": "/clusters",
+      "method": "get",
+      "tags": [
+        "Cluster"
+      ],
+      "summary": "Get all cluster registrations",
+      "description": "Returns all cluster registrations.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "clusters.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "ClusterListResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-availability": "sm",
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "createClusterRegistration",
+      "path": "/clusters",
+      "method": "post",
+      "tags": [
+        "Cluster"
+      ],
+      "summary": "Create or update a cluster registration",
+      "description": "Creates or updates a cluster registration in Camunda Hub via discovery. This does not provision infrastructure — it only creates or updates the cluster registration in Hub. This endpoint requires dynamic cluster management to be enabled. If a cluster with the resolved ID already exists, its registration will be updated.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "clusters.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "CreateClusterRequest",
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-availability": "sm",
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "getClusterUsageMetrics",
+      "path": "/clusters/usage-metrics",
+      "method": "get",
+      "tags": [
+        "Cluster"
+      ],
+      "summary": "Get cluster usage metrics",
+      "description": "Returns the usage metrics for a cluster. The provided token is forwarded to the Orchestration Cluster API of the target cluster, so it must additionally include the read:* permission for the orchestration-api audience.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [],
+      "queryParams": [
+        {
+          "name": "id",
+          "required": true
+        },
+        {
+          "name": "start",
+          "required": true
+        },
+        {
+          "name": "end",
+          "required": true
+        }
+      ],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "clusters.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "UsageMetricsResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-availability": "sm",
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "removeClusterRegistration",
+      "path": "/clusters/{clusterId}",
+      "method": "delete",
+      "tags": [
+        "Cluster"
+      ],
+      "summary": "Remove a cluster registration",
+      "description": "Removes a cluster registration from Camunda Hub. This does not delete or deprovision the actual cluster infrastructure — it only removes the cluster registration from Hub. This endpoint requires dynamic cluster management to be enabled.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "clusterId"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "clusters.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-availability": "sm",
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "getEnvironments",
+      "path": "/environments",
+      "method": "get",
+      "tags": [
+        "Environment"
+      ],
+      "summary": "Get all environments",
+      "description": "Returns all environments available in the organization. The organization is derived from the access token.\n\nOn SaaS, the environments are resolved from Console using the caller's own token; a token that is not authorized for Console's `cluster:read` permission is rejected with `403`. Self-Managed has no such requirement — it does not call Console — so this `cluster:read` `403` never applies there.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "environments.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "EnvironmentListResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "getWorkspaceEnvironments",
+      "path": "/workspaces/{workspaceKey}/environments",
+      "method": "get",
+      "tags": [
+        "Environment"
+      ],
+      "summary": "Get a workspace's assigned environments",
+      "description": "Returns the environments assigned to the given workspace.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "environments.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "EnvironmentListResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Workspace",
+          "bind": {
+            "workspaceKey": {
+              "from": "path",
+              "name": "workspaceKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "replaceWorkspaceEnvironments",
+      "path": "/workspaces/{workspaceKey}/environments",
+      "method": "put",
+      "tags": [
+        "Environment"
+      ],
+      "summary": "Replace a workspace's assigned environments",
+      "description": "Replaces the full set of environments assigned to the given workspace with the provided set. The request body is the exact set the workspace should end up assigned to: environments not listed are unassigned, and unassigning removes an environment from every project's selection in the workspace. Requires the `update` permission for the organization.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "environments.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ReplaceWorkspaceEnvironmentsRequest",
+      "successResponseSchemaRef": "EnvironmentListResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Workspace",
+          "bind": {
+            "workspaceKey": {
+              "from": "path",
+              "name": "workspaceKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "getProjectEnvironments",
+      "path": "/projects/{projectKey}/environments",
+      "method": "get",
+      "tags": [
+        "Environment"
+      ],
+      "summary": "Get a project's available environments",
+      "description": "Returns the environments available to the given project, which is the full set assigned to its parent workspace.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "environments.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "EnvironmentListResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Project",
+          "bind": {
+            "projectKey": {
+              "from": "path",
+              "name": "projectKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "ingestCatalogAssets",
+      "path": "/catalog/assets/ingestion",
+      "method": "put",
+      "tags": [
+        "Catalog"
+      ],
+      "summary": "Ingest catalog assets",
+      "description": "Ingests the full set of catalog assets.\n\nFor each asset, the actual element template JSON file as well as an accompanying README file must be provided.\nThe README should provide a description of the asset and can use Markdown syntax. It must contain a YAML\nfrontmatter section with a `template` field that references the element template by its file name. Optionally,\nthe frontmatter can specify a `category` and a list of `tags` that can be used to search and filter assets in\nthe catalog.\n\n```\n---\ntemplate: banking-system-connector.json\ncategory: Finance\ntags:\n  - invoice\n  - payment\n  - transaction\n---\n## Description\n...\n\n## Usage\n...\n```\n\nThe files must be provided as `multipart/form-data` with the named parts `readme` and `template` (the part name\nis the same for each file of the respective type).\n\nThe optional `source` form field identifies the catalog source the assets are ingested from. Only assets of\nthe ingested source are unpublished when they are missing from the payload; assets of other sources stay\nuntouched. If a submitted element template ID already exists in a different source, the asset is adopted:\nits source is updated to the ingested source and it is (re)published there. This is the hand-over path when\na source is renamed or a mono-repo is split into multiple repositories — the last successful ingestion\nwins. Requests without a `source` match the default bucket of assets that were ingested without a source.\n\nPreviously ingested assets of the ingested source that are not included in the request payload will be\nmarked as unpublished in the catalog. Unpublished assets are only accessible to administrators; regular\nmodeling users cannot use them for new diagram elements anymore. Existing diagrams using assets that get\nunpublished will continue to work as before.\n\nRe-ingesting an unpublished asset with an unchanged template at its latest version does not require a\nversion bump: the stored content is updated from the submission, including its deprecation flag.\nDeprecation is lifecycle metadata that follows the latest ingestion while an asset is unpublished.\nChanging a published asset — including only its deprecation flag — requires a higher template version.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "catalog.yaml",
+      "requestBodyContentTypes": [
+        "multipart/form-data"
+      ],
+      "requestBodySchemaRef": "CatalogAssetIngestionRequest",
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "deleteCatalogAsset",
+      "path": "/catalog/assets/{assetKey}",
+      "method": "delete",
+      "tags": [
+        "Catalog"
+      ],
+      "summary": "Delete a catalog asset",
+      "description": "Deletes the catalog asset with the given asset key.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "assetKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "catalog.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchCatalogAssets",
+      "path": "/catalog/assets/search",
+      "method": "post",
+      "tags": [
+        "Catalog"
+      ],
+      "summary": "Search catalog assets",
+      "description": "Returns catalog assets matching the given search criteria.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "catalog.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "CatalogAssetSearchQuery",
+      "successResponseSchemaRef": "CatalogAssetSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchCatalogAssetProjectUsages",
+      "path": "/catalog/assets/{assetKey}/project-usages/search",
+      "method": "post",
+      "tags": [
+        "Catalog"
+      ],
+      "summary": "Search the projects using a catalog asset",
+      "description": "Returns the projects that use the catalog asset with the given asset key, matching the given search criteria.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "assetKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "catalog.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "CatalogAssetProjectUsageSearchQuery",
+      "successResponseSchemaRef": "CatalogAssetProjectUsageSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchCatalogAssetFileUsages",
+      "path": "/catalog/assets/{assetKey}/file-usages/search",
+      "method": "post",
+      "tags": [
+        "Catalog"
+      ],
+      "summary": "Search the files using a catalog asset",
+      "description": "Returns the files that use the catalog asset with the given asset key, matching the given search criteria.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "assetKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "catalog.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "CatalogAssetFileUsageSearchQuery",
+      "successResponseSchemaRef": "CatalogAssetFileUsageSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "createFile",
+      "path": "/files",
+      "method": "post",
+      "tags": [
+        "File"
+      ],
+      "summary": "Create a file",
+      "description": "Creates a new file in the specified project and folder.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "FileCreateRequest",
+      "successResponseSchemaRef": "FileResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-provider": [
+          "fileKey",
+          "revision"
+        ]
+      }
+    },
+    {
+      "operationId": "getFile",
+      "path": "/files/{fileKey}",
+      "method": "get",
+      "tags": [
+        "File"
+      ],
+      "summary": "Get a file",
+      "description": "Returns the file metadata and content for the given file key.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "fileKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "FileResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "File",
+          "bind": {
+            "fileKey": {
+              "from": "path",
+              "name": "fileKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "updateFile",
+      "path": "/files/{fileKey}",
+      "method": "patch",
+      "tags": [
+        "File"
+      ],
+      "summary": "Update a file",
+      "description": "Updates the metadata and/or content of an existing file.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "fileKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "FileUpdateRequest",
+      "successResponseSchemaRef": "FileResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "File",
+          "bind": {
+            "fileKey": {
+              "from": "path",
+              "name": "fileKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "deleteFile",
+      "path": "/files/{fileKey}",
+      "method": "delete",
+      "tags": [
+        "File"
+      ],
+      "summary": "Delete a file",
+      "description": "Soft-deletes the file with the given file key. The file is moved to the recently deleted state and can be recovered until the retention period expires and the scheduled cleanup job runs. To permanently and irreversibly remove a file, use `DELETE /files/{fileKey}/permanent` instead.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "fileKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "File",
+          "bind": {
+            "fileKey": {
+              "from": "path",
+              "name": "fileKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "permanentlyDeleteFile",
+      "path": "/files/{fileKey}/permanent",
+      "method": "delete",
+      "tags": [
+        "File"
+      ],
+      "summary": "Permanently delete a file",
+      "description": "Permanently and irreversibly removes the file with the given file key. Process application snapshot references to the file are detached so snapshot data is preserved. The file cannot be recovered afterwards. This works in one step and does not require the file to be soft-deleted first.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "fileKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchFiles",
+      "path": "/files/search",
+      "method": "post",
+      "tags": [
+        "File"
+      ],
+      "summary": "Search files",
+      "description": "Returns files matching the given search criteria.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "FileSearchQuery",
+      "successResponseSchemaRef": "FileSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchRecentlyDeletedFiles",
+      "path": "/files/recently-deleted/search",
+      "method": "post",
+      "tags": [
+        "File"
+      ],
+      "summary": "Search recently deleted files",
+      "description": "Returns soft-deleted files scoped to the caller's organization. Only files that are the root of their own deletion are listed; a file soft-deleted as part of an ancestor folder, project, or workspace's deletion event is represented by that ancestor instead, and a file deleted independently before its ancestor stays listed in its own right; use the respective recently-deleted search endpoint to access that ancestor entity. Files remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /files/{fileKey}/restoration` or permanently removed with `DELETE /files/{fileKey}/permanent`.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "RecentlyDeletedFileSearchQuery",
+      "successResponseSchemaRef": "RecentlyDeletedFileSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "restoreFile",
+      "path": "/files/{fileKey}/restoration",
+      "method": "post",
+      "tags": [
+        "File"
+      ],
+      "summary": "Restore a recently deleted file",
+      "description": "Restores a soft-deleted file back to the live project. If the file's original parent folder was also deleted, the file is restored into a new wrapper folder at the project root. The file cannot be restored if its containing project has been deleted. Only a file that is the root of its own deletion can be restored via this endpoint; a file that was soft-deleted as part of an ancestor folder, project, or workspace's deletion event must be restored through the corresponding ancestor restoration endpoint instead.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "fileKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "FileResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "File",
+          "bind": {
+            "fileKey": {
+              "from": "path",
+              "name": "fileKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "purgeFile",
+      "path": "/files/{fileKey}/purge",
+      "method": "delete",
+      "tags": [
+        "File"
+      ],
+      "summary": "Purge a file from all version history",
+      "description": "Permanently and irrecoverably removes the file and all references to it across every process application version snapshot. Works on live and soft-deleted files. If the file row has already been permanently deleted, purge still removes any orphaned process application snapshot milestone references that point to the file by ID. Idempotent for files that never existed or have already been fully purged within the caller's organization.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "fileKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "files.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "createFolder",
+      "path": "/folders",
+      "method": "post",
+      "tags": [
+        "Folder"
+      ],
+      "summary": "Create a folder",
+      "description": "Creates a new folder in the specified project and/or parent folder.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "folders.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "FolderCreateRequest",
+      "successResponseSchemaRef": "FolderResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-provider": [
+          "folderKey"
+        ]
+      }
+    },
+    {
+      "operationId": "getFolder",
+      "path": "/folders/{folderKey}",
+      "method": "get",
+      "tags": [
+        "Folder"
+      ],
+      "summary": "Get a folder",
+      "description": "Returns the folder metadata and its content (child folders and files).",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "folderKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "folders.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "FolderDetailResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Folder",
+          "bind": {
+            "folderKey": {
+              "from": "path",
+              "name": "folderKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "updateFolder",
+      "path": "/folders/{folderKey}",
+      "method": "patch",
+      "tags": [
+        "Folder"
+      ],
+      "summary": "Update a folder",
+      "description": "Updates the name and/or location of an existing folder.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "folderKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "folders.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "FolderUpdateRequest",
+      "successResponseSchemaRef": "FolderResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Folder",
+          "bind": {
+            "folderKey": {
+              "from": "path",
+              "name": "folderKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "deleteFolder",
+      "path": "/folders/{folderKey}",
+      "method": "delete",
+      "tags": [
+        "Folder"
+      ],
+      "summary": "Delete a folder",
+      "description": "Soft-deletes the folder with the given folder key, cascading to all of its descendants. The folder is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a folder, use `DELETE /folders/{folderKey}/permanent` instead.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "folderKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "folders.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Folder",
+          "bind": {
+            "folderKey": {
+              "from": "path",
+              "name": "folderKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "permanentlyDeleteFolder",
+      "path": "/folders/{folderKey}/permanent",
+      "method": "delete",
+      "tags": [
+        "Folder"
+      ],
+      "summary": "Permanently delete a folder",
+      "description": "Permanently and irreversibly removes the folder with the given folder key. The folder cannot be recovered afterwards. If the folder is live (not soft-deleted), then it must not contain any live files anywhere in its subtree. Empty live folders are removed as part of the deletion as well as any soft-deleted items in its subtree. If the folder is soft-deleted and has been the target of the operation, then it is deleted with any soft-deleted folders or files it contains. If the folder is soft-deleted but has not been the target of the operation (i.e. one of its ancestor folders/project/workspace was soft-deleted), then the operation fails with 409. Instead, delete the original target of the soft-delete operation.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "folderKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "folders.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchRecentlyDeletedFolders",
+      "path": "/folders/recently-deleted/search",
+      "method": "post",
+      "tags": [
+        "Folder"
+      ],
+      "summary": "Search recently deleted folders",
+      "description": "Returns soft-deleted folders scoped to the caller's organization. Only folders that are the root of their own deletion are listed; a folder soft-deleted as part of an ancestor folder, project, or workspace's deletion event is represented by that ancestor instead, and a folder deleted independently before its ancestor stays listed in its own right; use the respective recently-deleted search endpoint to access that ancestor entity. Folders remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /folders/{folderKey}/restoration` or permanently removed with `DELETE /folders/{folderKey}/permanent`.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "folders.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "RecentlyDeletedFolderSearchQuery",
+      "successResponseSchemaRef": "RecentlyDeletedFolderSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "restoreFolder",
+      "path": "/folders/{folderKey}/restoration",
+      "method": "post",
+      "tags": [
+        "Folder"
+      ],
+      "summary": "Restore a recently deleted folder",
+      "description": "Restores a soft-deleted folder back to the live project, together with the descendants that were soft-deleted with it. If the folder's original parent folder was also deleted, the folder is restored into a new wrapper folder under the nearest surviving ancestor folder, or at the project root if no ancestor folder survives. The folder cannot be restored while its containing project or workspace is still deleted. Only a folder that is the root of its own deletion can be restored via this endpoint; a folder that was soft-deleted as part of an ancestor folder, project, or workspace's deletion event must be restored through the corresponding ancestor restoration endpoint instead.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "folderKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "folders.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "FolderResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Folder",
+          "bind": {
+            "folderKey": {
+              "from": "path",
+              "name": "folderKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "getInfo",
+      "path": "/info",
+      "method": "get",
+      "tags": [
+        "Info"
+      ],
+      "summary": "Get API info",
+      "description": "Returns metadata about the V2 API, including the API version and the organization authorized by the caller's credentials.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "info.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "InfoResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "createProject",
+      "path": "/projects",
+      "method": "post",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Create a project",
+      "description": "Creates a new empty project in the specified workspace.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectCreateRequest",
+      "successResponseSchemaRef": "ProjectResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-provider": [
+          "projectKey"
+        ]
+      }
+    },
+    {
+      "operationId": "getProject",
+      "path": "/projects/{projectKey}",
+      "method": "get",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Get a project",
+      "description": "Returns the project metadata and its content (child folders and files).",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "ProjectDetailResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Project",
+          "bind": {
+            "projectKey": {
+              "from": "path",
+              "name": "projectKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "updateProject",
+      "path": "/projects/{projectKey}",
+      "method": "patch",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Update a project",
+      "description": "Updates the name and/or workspace of an existing project.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectUpdateRequest",
+      "successResponseSchemaRef": "ProjectResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Project",
+          "bind": {
+            "projectKey": {
+              "from": "path",
+              "name": "projectKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "deleteProject",
+      "path": "/projects/{projectKey}",
+      "method": "delete",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Delete a project",
+      "description": "Soft-deletes the project with the given project key, cascading to all of its descendant folders and files. The project is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a project, use `DELETE /projects/{projectKey}/permanent` instead.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Project",
+          "bind": {
+            "projectKey": {
+              "from": "path",
+              "name": "projectKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "permanentlyDeleteProject",
+      "path": "/projects/{projectKey}/permanent",
+      "method": "delete",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Permanently delete a project",
+      "description": "Permanently and irreversibly removes the project with the given project key. The project cannot be recovered afterwards. Empty folders and version history are removed as part of the deletion. If the project is live (not soft-deleted), then it must not contain any live files anywhere in its subtree. Empty live folders are removed as part of the deletion as well as any soft-deleted items in its subtree. If the project is soft-deleted and has been the target of the operation, then it is deleted with any soft-deleted folders or files it contains. If the project is soft-deleted but has not been the target of the operation (i.e. its ancestor workspace was soft-deleted), then the operation fails with 409. Instead, delete the original target of the soft-delete operation.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchProjects",
+      "path": "/projects/search",
+      "method": "post",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Search projects",
+      "description": "Returns projects matching the given search criteria across all workspaces in the caller's organization.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectSearchQuery",
+      "successResponseSchemaRef": "ProjectSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchRecentlyDeletedProjects",
+      "path": "/projects/recently-deleted/search",
+      "method": "post",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Search recently deleted projects",
+      "description": "Returns soft-deleted projects scoped to the caller's organization. Only projects that are the root of their own deletion are listed; a project soft-deleted as part of an ancestor workspace's deletion event is represented by that workspace instead, and a project deleted independently before its workspace stays listed in its own right; use the respective recently-deleted search endpoint to access that workspace entity. Projects remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /projects/{projectKey}/restoration` or permanently removed with `DELETE /projects/{projectKey}/permanent`.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "RecentlyDeletedProjectSearchQuery",
+      "successResponseSchemaRef": "RecentlyDeletedProjectSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "restoreProject",
+      "path": "/projects/{projectKey}/restoration",
+      "method": "post",
+      "tags": [
+        "Project"
+      ],
+      "summary": "Restore a recently deleted project",
+      "description": "Restores a soft-deleted project back to the live workspace, together with everything that was soft-deleted as part of the same deletion event. The project cannot be restored while its workspace is still deleted. Only a project that is the root of its own deletion can be restored via this endpoint; a project that was soft-deleted as part of its workspace's deletion event must be restored through the workspace restoration endpoint instead.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "projects.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "ProjectResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Project",
+          "bind": {
+            "projectKey": {
+              "from": "path",
+              "name": "projectKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "searchProjectCatalogAssetUsages",
+      "path": "/projects/{projectKey}/catalog/asset-usages/search",
+      "method": "post",
+      "tags": [
+        "Catalog"
+      ],
+      "summary": "Search the catalog assets used within a project",
+      "description": "Returns the catalog assets that are used within the project with the given project key, matching the given\nsearch criteria.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "catalog.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectCatalogAssetUsageSearchQuery",
+      "successResponseSchemaRef": "ProjectCatalogAssetUsageSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "createProjectSnapshot",
+      "path": "/project-snapshots",
+      "method": "post",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Create a project snapshot",
+      "description": "Creates a new project snapshot by taking a snapshot of every file currently in the project. Each file contributes one file version to the snapshot, recorded together with the file's name and folder location at that moment.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectSnapshotCreateRequest",
+      "successResponseSchemaRef": "ProjectSnapshotResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-provider": [
+          "projectSnapshotKey"
+        ]
+      }
+    },
+    {
+      "operationId": "getProjectSnapshot",
+      "path": "/project-snapshots/{projectSnapshotKey}",
+      "method": "get",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Get a project snapshot",
+      "description": "Returns the project snapshot metadata together with the file versions it captured. Each file version carries the content hash and the file name and folder location recorded at snapshot time. To compare two project snapshots, request both and match their file versions on `fileKey` to find the same file across both snapshots, then compare `contentHash` to detect changes.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "ProjectSnapshotDetailResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "updateProjectSnapshot",
+      "path": "/project-snapshots/{projectSnapshotKey}",
+      "method": "patch",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Update a project snapshot",
+      "description": "Updates the attributes of an existing project snapshot.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectSnapshotUpdateRequest",
+      "successResponseSchemaRef": "ProjectSnapshotResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "deleteProjectSnapshot",
+      "path": "/project-snapshots/{projectSnapshotKey}",
+      "method": "delete",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Delete a project snapshot",
+      "description": "Deletes the specified project snapshot. The file versions it captured are not deleted, because they can be shared with other project snapshots.\n\nDeleting a project snapshot that captured a file version published to shared resources requires elevated organization access and is rejected with `403` otherwise. On SaaS, public API clients never hold elevated organization access, so deleting a snapshot that captured such a file version always fails with `403` in that case.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "searchProjectSnapshots",
+      "path": "/project-snapshots/search",
+      "method": "post",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Search project snapshots",
+      "description": "Returns the project snapshots matching the given search criteria, scoped to the caller's organization. Restoring a project snapshot can create an additional, automatically named project snapshot capturing the state that was replaced; those appear here like any other project snapshot. Filter by `fileVersionKey` to find the project snapshots that captured a given file version.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectSnapshotSearchQuery",
+      "successResponseSchemaRef": "ProjectSnapshotSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "restoreProjectSnapshot",
+      "path": "/project-snapshots/{projectSnapshotKey}/restoration",
+      "method": "post",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Restore a project snapshot",
+      "description": "Restores the project to the state captured in this project snapshot: file contents, names and folder locations are all reset to the snapshot, files added since are removed, and files deleted since are recreated.\nBefore anything is replaced, the project's current state is preserved as a new, automatically named project snapshot, unless the project has not changed since its most recent project snapshot. The restored-to project snapshot itself is left unchanged, so it can be restored again later.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "requestProjectSnapshotReview",
+      "path": "/project-snapshots/{projectSnapshotKey}/review-requests",
+      "method": "post",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Request a review of a project snapshot",
+      "description": "Marks the project snapshot as awaiting review and returns the created review request. A snapshot has at most one review request: requesting a review for a snapshot that already has one is rejected with `409`, even after that request has been reviewed. A reviewed snapshot can therefore never be re-requested; create a new snapshot to start another review round. Creating a request also supersedes any pending request on a different snapshot of the same project, so a project has at most one snapshot awaiting review at a time.\nRequesting a review adds a system-authored comment to the project's BPMN files.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "ProjectSnapshotReviewRequest",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "submitProjectSnapshotReview",
+      "path": "/project-snapshots/{projectSnapshotKey}/reviews",
+      "method": "post",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Submit a review decision for a project snapshot",
+      "description": "Records a review decision, with an optional comment, for a project snapshot that has a review request. A snapshot keeps accepting reviews as long as its request has not been superseded, so a follow-up review can be submitted after an earlier one. Submitting a review for a snapshot with no review request at all is rejected with `403`.\nSubmitting a review adds a system-authored comment to the project's BPMN files. The review is attributed to the public API user rather than to a person, and the API does not enforce that the reviewer differs from whoever created the snapshot.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectSnapshotReviewCreateRequest",
+      "successResponseSchemaRef": "ProjectSnapshotReview",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "duplicateProjectSnapshot",
+      "path": "/project-snapshots/{projectSnapshotKey}/duplication",
+      "method": "post",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Duplicate a project snapshot",
+      "description": "Creates a new project in the target workspace from this project snapshot. The new project takes the current name of the snapshot's project, with a copy suffix appended if a project of that name already exists in the target workspace. If appending the suffix would exceed the maximum project name length, the base name is truncated first.\nThe duplicate is created with one project snapshot of its own, carrying the source snapshot's name and description. The source project snapshot is left unchanged.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "ProjectSnapshotDuplicationRequest",
+      "successResponseSchemaRef": "ProjectResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        },
+        "x-semantic-provider": [
+          "projectKey"
+        ]
+      }
+    },
+    {
+      "operationId": "getProjectSnapshotExternalResources",
+      "path": "/project-snapshots/{projectSnapshotKey}/external-resources",
+      "method": "get",
+      "tags": [
+        "Project Snapshot"
+      ],
+      "summary": "Check whether a project snapshot references external resources",
+      "description": "Reports whether this project snapshot references resources that live outside the snapshot itself: forms, call activities, business rule tasks, and RPA resources. `false` for each flag means the snapshot does not reference anything of that kind outside itself.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "projectSnapshotKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "project-snapshots.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "ProjectSnapshotExternalResourcesResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "ProjectSnapshot",
+          "bind": {
+            "projectSnapshotKey": {
+              "from": "path",
+              "name": "projectSnapshotKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "createVersion",
+      "path": "/versions",
+      "method": "post",
+      "tags": [
+        "Version"
+      ],
+      "summary": "Create a version",
+      "description": "Creates a new version by taking a snapshot of the current content of the specified file.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "versions.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "VersionCreateRequest",
+      "successResponseSchemaRef": "VersionResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-provider": [
+          "versionKey"
+        ]
+      }
+    },
+    {
+      "operationId": "getVersion",
+      "path": "/versions/{versionKey}",
+      "method": "get",
+      "tags": [
+        "Version"
+      ],
+      "summary": "Get a version",
+      "description": "Returns the version metadata and the file content at that version.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "versionKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "versions.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "VersionDetailResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Version",
+          "bind": {
+            "versionKey": {
+              "from": "path",
+              "name": "versionKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "updateVersion",
+      "path": "/versions/{versionKey}",
+      "method": "patch",
+      "tags": [
+        "Version"
+      ],
+      "summary": "Update a version",
+      "description": "Updates the attributes of an existing version.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "versionKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "versions.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "VersionUpdateRequest",
+      "successResponseSchemaRef": "VersionResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Version",
+          "bind": {
+            "versionKey": {
+              "from": "path",
+              "name": "versionKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "deleteVersion",
+      "path": "/versions/{versionKey}",
+      "method": "delete",
+      "tags": [
+        "Version"
+      ],
+      "summary": "Delete a version",
+      "description": "Deletes the specified version.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "versionKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "versions.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Version",
+          "bind": {
+            "versionKey": {
+              "from": "path",
+              "name": "versionKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "searchVersions",
+      "path": "/versions/search",
+      "method": "post",
+      "tags": [
+        "Version"
+      ],
+      "summary": "Search versions",
+      "description": "Returns versions matching the given search criteria.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "versions.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "VersionSearchQuery",
+      "successResponseSchemaRef": "VersionSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "restoreVersion",
+      "path": "/versions/{versionKey}/restoration",
+      "method": "post",
+      "tags": [
+        "Version"
+      ],
+      "summary": "Restore a version",
+      "description": "Restores the file content to the state captured in this version. A new version is created representing the restored state, unless both the file's live content and its most recent version already match that exact content, in which case that version is returned and nothing is created. For element template files, the request body must include the target version number and a new version is always created.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "versionKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "versions.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "VersionRestorationRequest",
+      "successResponseSchemaRef": "VersionResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Version",
+          "bind": {
+            "versionKey": {
+              "from": "path",
+              "name": "versionKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "createWorkspace",
+      "path": "/workspaces",
+      "method": "post",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Create a workspace",
+      "description": "Creates a new workspace in the caller's organization.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "WorkspaceCreateRequest",
+      "successResponseSchemaRef": "WorkspaceResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-provider": [
+          "workspaceKey"
+        ]
+      }
+    },
+    {
+      "operationId": "getWorkspace",
+      "path": "/workspaces/{workspaceKey}",
+      "method": "get",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Get a workspace",
+      "description": "Returns the workspace metadata and its contained projects.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "WorkspaceDetailResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Workspace",
+          "bind": {
+            "workspaceKey": {
+              "from": "path",
+              "name": "workspaceKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "updateWorkspace",
+      "path": "/workspaces/{workspaceKey}",
+      "method": "patch",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Update a workspace",
+      "description": "Updates an existing workspace.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "WorkspaceUpdateRequest",
+      "successResponseSchemaRef": "WorkspaceResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Workspace",
+          "bind": {
+            "workspaceKey": {
+              "from": "path",
+              "name": "workspaceKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "deleteWorkspace",
+      "path": "/workspaces/{workspaceKey}",
+      "method": "delete",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Delete a workspace",
+      "description": "Soft-deletes the workspace with the given key, cascading to all of its projects, folders, files, and IDP applications. The workspace is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a workspace, use `DELETE /workspaces/{workspaceKey}/permanent` instead.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Workspace",
+          "bind": {
+            "workspaceKey": {
+              "from": "path",
+              "name": "workspaceKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "permanentlyDeleteWorkspace",
+      "path": "/workspaces/{workspaceKey}/permanent",
+      "method": "delete",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Permanently delete a workspace",
+      "description": "Permanently and irreversibly removes the workspace with the given key. The workspace cannot be recovered afterwards. If the workspace is already soft-deleted, it is removed along with all of its projects, folders, files, process applications, and IDP applications regardless of their contents; otherwise it must have no live files, process applications, or IDP applications, and any soft-deleted items in its subtree are removed as part of the deletion. This works in one step and does not require the workspace to be soft-deleted first.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchWorkspaces",
+      "path": "/workspaces/search",
+      "method": "post",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Search workspaces",
+      "description": "Returns workspaces matching the given search criteria. Results are scoped to the caller's organization.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "WorkspaceSearchQuery",
+      "successResponseSchemaRef": "WorkspaceSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "searchRecentlyDeletedWorkspaces",
+      "path": "/workspaces/recently-deleted/search",
+      "method": "post",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Search recently deleted workspaces",
+      "description": "Returns soft-deleted workspaces scoped to the caller's organization. Workspaces remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /workspaces/{workspaceKey}/restoration` or permanently removed with `DELETE /workspaces/{workspaceKey}/permanent`.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "RecentlyDeletedWorkspaceSearchQuery",
+      "successResponseSchemaRef": "RecentlyDeletedWorkspaceSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10"
+      }
+    },
+    {
+      "operationId": "restoreWorkspace",
+      "path": "/workspaces/{workspaceKey}/restoration",
+      "method": "post",
+      "tags": [
+        "Workspace"
+      ],
+      "summary": "Restore a recently deleted workspace",
+      "description": "Restores a soft-deleted workspace, together with everything that was soft-deleted as part of the same deletion event.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "workspaces.yaml",
+      "requestBodyContentTypes": [],
+      "successResponseSchemaRef": "WorkspaceResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Workspace",
+          "bind": {
+            "workspaceKey": {
+              "from": "path",
+              "name": "workspaceKey"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "addMember",
+      "path": "/workspaces/{workspaceKey}/members",
+      "method": "post",
+      "tags": [
+        "Member"
+      ],
+      "summary": "Add or update a member",
+      "description": "Adds a member to the workspace, or updates the role of an existing member. The member is identified by their email address. If that user has not logged in yet, a workspace invitation is created and an email is sent instead, and the person becomes an actual member once they log in for the first time.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "members.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "MemberCreateRequest",
+      "successResponseSchemaRef": "MemberResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-establishes": {
+          "kind": "WorkspaceMemberMembership",
+          "shape": "edge",
+          "identifiedBy": [
+            {
+              "in": "path",
+              "name": "workspaceKey",
+              "semanticType": "WorkspaceKey"
+            },
+            {
+              "in": "body",
+              "name": "email",
+              "acceptsExternal": true,
+              "semanticType": "MemberEmail"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "operationId": "removeMember",
+      "path": "/workspaces/{workspaceKey}/members/{email}",
+      "method": "delete",
+      "tags": [
+        "Member"
+      ],
+      "summary": "Remove a member",
+      "description": "Removes a member from the workspace.",
+      "eventuallyConsistent": false,
+      "hasRequestBody": false,
+      "requestBodyUnion": false,
+      "bodyOnly": false,
+      "pathParams": [
+        "workspaceKey",
+        "email"
+      ],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "members.yaml",
+      "requestBodyContentTypes": [],
+      "successStatus": 204,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "WorkspaceMemberMembership",
+          "bind": {
+            "workspaceKey": {
+              "from": "path",
+              "name": "workspaceKey"
+            },
+            "email": {
+              "from": "path",
+              "name": "email"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "searchMembers",
+      "path": "/members/search",
+      "method": "post",
+      "tags": [
+        "Member"
+      ],
+      "summary": "Search members",
+      "description": "Returns members matching the given search criteria. A workspace key filter is required — members cannot be searched across workspaces.\n",
+      "eventuallyConsistent": false,
+      "hasRequestBody": true,
+      "requestBodyUnion": false,
+      "bodyOnly": true,
+      "pathParams": [],
+      "queryParams": [],
+      "requestBodyUnionRefs": [],
+      "optionalTenantIdInBody": false,
+      "sourceFile": "members.yaml",
+      "requestBodyContentTypes": [
+        "application/json"
+      ],
+      "requestBodySchemaRef": "MemberSearchQuery",
+      "successResponseSchemaRef": "MemberSearchQueryResult",
+      "successStatus": 200,
+      "vendorExtensions": {
+        "x-added-in-version": "8.10",
+        "x-semantic-requires": {
+          "kind": "Workspace",
+          "bind": {
+            "workspaceKey": {
+              "from": "body",
+              "name": "filter.workspaceKey"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "deprecatedEnumMembers": [],
+  "semanticProviders": [],
+  "integrity": {
+    "totalSemanticKeys": 8,
+    "totalUnions": 7,
+    "totalOperations": 66,
+    "totalEventuallyConsistent": 0,
+    "totalDeprecatedEnumSchemas": 0,
+    "totalSemanticProviders": 0
+  }
+}

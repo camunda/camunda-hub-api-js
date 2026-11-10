@@ -1,0 +1,6 @@
+{
+  "repo": "camunda/camunda-hub",
+  "ref": "main",
+  "commit": "6238b88e90c41bff31f460292d28f89a3ae1b236",
+  "specDir": "restapi/public-api/src/main/resources/openapi/v2"
+}
