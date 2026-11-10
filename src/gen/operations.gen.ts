@@ -9,218 +9,73 @@ import * as Sdk from './sdk.gen';
 // Operations: 66
 type _RawReturn<F> = F extends (...a:any)=>Promise<infer R> ? R : never;
 type _DataOf<F> = Exclude<_RawReturn<F> extends { data: infer D } ? D : _RawReturn<F>, undefined>;
-type addMemberOptions = Parameters<typeof Sdk.addMember>[0];
-type addMemberBody = (NonNullable<addMemberOptions> extends { body?: infer B } ? B : never);
-type addMemberPathParam_workspaceKey = (NonNullable<addMemberOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type addMemberInput = addMemberBody & { workspaceKey: addMemberPathParam_workspaceKey };
-type createClusterRegistrationOptions = Parameters<typeof Sdk.createClusterRegistration>[0];
-type createClusterRegistrationBody = (NonNullable<createClusterRegistrationOptions> extends { body?: infer B } ? B : never);
-export type createClusterRegistrationInput = createClusterRegistrationBody;
-type createFileOptions = Parameters<typeof Sdk.createFile>[0];
-type createFileBody = (NonNullable<createFileOptions> extends { body?: infer B } ? B : never);
-export type createFileInput = createFileBody;
-type createFolderOptions = Parameters<typeof Sdk.createFolder>[0];
-type createFolderBody = (NonNullable<createFolderOptions> extends { body?: infer B } ? B : never);
-export type createFolderInput = createFolderBody;
-type createProjectOptions = Parameters<typeof Sdk.createProject>[0];
-type createProjectBody = (NonNullable<createProjectOptions> extends { body?: infer B } ? B : never);
-export type createProjectInput = createProjectBody;
-type createProjectSnapshotOptions = Parameters<typeof Sdk.createProjectSnapshot>[0];
-type createProjectSnapshotBody = (NonNullable<createProjectSnapshotOptions> extends { body?: infer B } ? B : never);
-export type createProjectSnapshotInput = createProjectSnapshotBody;
-type createVersionOptions = Parameters<typeof Sdk.createVersion>[0];
-type createVersionBody = (NonNullable<createVersionOptions> extends { body?: infer B } ? B : never);
-export type createVersionInput = createVersionBody;
-type createWorkspaceOptions = Parameters<typeof Sdk.createWorkspace>[0];
-type createWorkspaceBody = (NonNullable<createWorkspaceOptions> extends { body?: infer B } ? B : never);
-export type createWorkspaceInput = createWorkspaceBody;
-type deleteCatalogAssetOptions = Parameters<typeof Sdk.deleteCatalogAsset>[0];
-type deleteCatalogAssetPathParam_assetKey = (NonNullable<deleteCatalogAssetOptions> extends { path: { assetKey: infer P } } ? P : any);
-export type deleteCatalogAssetInput = { assetKey: deleteCatalogAssetPathParam_assetKey };
-type deleteFileOptions = Parameters<typeof Sdk.deleteFile>[0];
-type deleteFilePathParam_fileKey = (NonNullable<deleteFileOptions> extends { path: { fileKey: infer P } } ? P : any);
-export type deleteFileInput = { fileKey: deleteFilePathParam_fileKey };
-type deleteFolderOptions = Parameters<typeof Sdk.deleteFolder>[0];
-type deleteFolderPathParam_folderKey = (NonNullable<deleteFolderOptions> extends { path: { folderKey: infer P } } ? P : any);
-export type deleteFolderInput = { folderKey: deleteFolderPathParam_folderKey };
-type deleteProjectOptions = Parameters<typeof Sdk.deleteProject>[0];
-type deleteProjectPathParam_projectKey = (NonNullable<deleteProjectOptions> extends { path: { projectKey: infer P } } ? P : any);
-export type deleteProjectInput = { projectKey: deleteProjectPathParam_projectKey };
-type deleteProjectSnapshotOptions = Parameters<typeof Sdk.deleteProjectSnapshot>[0];
-type deleteProjectSnapshotPathParam_projectSnapshotKey = (NonNullable<deleteProjectSnapshotOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type deleteProjectSnapshotInput = { projectSnapshotKey: deleteProjectSnapshotPathParam_projectSnapshotKey };
-type deleteVersionOptions = Parameters<typeof Sdk.deleteVersion>[0];
-type deleteVersionPathParam_versionKey = (NonNullable<deleteVersionOptions> extends { path: { versionKey: infer P } } ? P : any);
-export type deleteVersionInput = { versionKey: deleteVersionPathParam_versionKey };
-type deleteWorkspaceOptions = Parameters<typeof Sdk.deleteWorkspace>[0];
-type deleteWorkspacePathParam_workspaceKey = (NonNullable<deleteWorkspaceOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type deleteWorkspaceInput = { workspaceKey: deleteWorkspacePathParam_workspaceKey };
-type duplicateProjectSnapshotOptions = Parameters<typeof Sdk.duplicateProjectSnapshot>[0];
-type duplicateProjectSnapshotBody = (NonNullable<duplicateProjectSnapshotOptions> extends { body?: infer B } ? B : never);
-type duplicateProjectSnapshotPathParam_projectSnapshotKey = (NonNullable<duplicateProjectSnapshotOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type duplicateProjectSnapshotInput = duplicateProjectSnapshotBody & { projectSnapshotKey: duplicateProjectSnapshotPathParam_projectSnapshotKey };
-type getClusterRegistrationsOptions = Parameters<typeof Sdk.getClusterRegistrations>[0];
+import type { AddMemberData, CreateClusterRegistrationData, CreateFileData, CreateFolderData, CreateProjectData, CreateProjectSnapshotData, CreateVersionData, CreateWorkspaceData, DeleteCatalogAssetData, DeleteFileData, DeleteFolderData, DeleteProjectData, DeleteProjectSnapshotData, DeleteVersionData, DeleteWorkspaceData, DuplicateProjectSnapshotData, GetClusterUsageMetricsData, GetFileData, GetFolderData, GetProjectData, GetProjectEnvironmentsData, GetProjectSnapshotData, GetProjectSnapshotExternalResourcesData, GetVersionData, GetWorkspaceData, GetWorkspaceEnvironmentsData, IngestCatalogAssetsData, PermanentlyDeleteFileData, PermanentlyDeleteFolderData, PermanentlyDeleteProjectData, PermanentlyDeleteWorkspaceData, PurgeFileData, RemoveClusterRegistrationData, RemoveMemberData, ReplaceWorkspaceEnvironmentsData, RequestProjectSnapshotReviewData, RestoreFileData, RestoreFolderData, RestoreProjectData, RestoreProjectSnapshotData, RestoreVersionData, RestoreWorkspaceData, SearchCatalogAssetFileUsagesData, SearchCatalogAssetProjectUsagesData, SearchCatalogAssetsData, SearchFilesData, SearchMembersData, SearchProjectCatalogAssetUsagesData, SearchProjectsData, SearchProjectSnapshotsData, SearchRecentlyDeletedFilesData, SearchRecentlyDeletedFoldersData, SearchRecentlyDeletedProjectsData, SearchRecentlyDeletedWorkspacesData, SearchVersionsData, SearchWorkspacesData, SubmitProjectSnapshotReviewData, UpdateFileData, UpdateFolderData, UpdateProjectData, UpdateProjectSnapshotData, UpdateVersionData, UpdateWorkspaceData } from './types.gen';
+export type addMemberInput = NonNullable<AddMemberData['body']> & { workspaceKey: AddMemberData['path']['workspaceKey'] };
+export type createClusterRegistrationInput = NonNullable<CreateClusterRegistrationData['body']>;
+export type createFileInput = NonNullable<CreateFileData['body']>;
+export type createFolderInput = NonNullable<CreateFolderData['body']>;
+export type createProjectInput = NonNullable<CreateProjectData['body']>;
+export type createProjectSnapshotInput = NonNullable<CreateProjectSnapshotData['body']>;
+export type createVersionInput = NonNullable<CreateVersionData['body']>;
+export type createWorkspaceInput = NonNullable<CreateWorkspaceData['body']>;
+export type deleteCatalogAssetInput = { assetKey: DeleteCatalogAssetData['path']['assetKey'] };
+export type deleteFileInput = { fileKey: DeleteFileData['path']['fileKey'] };
+export type deleteFolderInput = { folderKey: DeleteFolderData['path']['folderKey'] };
+export type deleteProjectInput = { projectKey: DeleteProjectData['path']['projectKey'] };
+export type deleteProjectSnapshotInput = { projectSnapshotKey: DeleteProjectSnapshotData['path']['projectSnapshotKey'] };
+export type deleteVersionInput = { versionKey: DeleteVersionData['path']['versionKey'] };
+export type deleteWorkspaceInput = { workspaceKey: DeleteWorkspaceData['path']['workspaceKey'] };
+export type duplicateProjectSnapshotInput = NonNullable<DuplicateProjectSnapshotData['body']> & { projectSnapshotKey: DuplicateProjectSnapshotData['path']['projectSnapshotKey'] };
 export type getClusterRegistrationsInput = void;
-type getClusterUsageMetricsOptions = Parameters<typeof Sdk.getClusterUsageMetrics>[0];
-type getClusterUsageMetricsQueryParam_id = (NonNullable<getClusterUsageMetricsOptions> extends { query?: { id?: infer Q } } ? Q : any);
-type getClusterUsageMetricsQueryParam_start = (NonNullable<getClusterUsageMetricsOptions> extends { query?: { start?: infer Q } } ? Q : any);
-type getClusterUsageMetricsQueryParam_end = (NonNullable<getClusterUsageMetricsOptions> extends { query?: { end?: infer Q } } ? Q : any);
-export type getClusterUsageMetricsInput = { id: getClusterUsageMetricsQueryParam_id; start: getClusterUsageMetricsQueryParam_start; end: getClusterUsageMetricsQueryParam_end };
-type getEnvironmentsOptions = Parameters<typeof Sdk.getEnvironments>[0];
+export type getClusterUsageMetricsInput = { id: NonNullable<NonNullable<GetClusterUsageMetricsData['query']>['id']>; start: NonNullable<NonNullable<GetClusterUsageMetricsData['query']>['start']>; end: NonNullable<NonNullable<GetClusterUsageMetricsData['query']>['end']> };
 export type getEnvironmentsInput = void;
-type getFileOptions = Parameters<typeof Sdk.getFile>[0];
-type getFilePathParam_fileKey = (NonNullable<getFileOptions> extends { path: { fileKey: infer P } } ? P : any);
-export type getFileInput = { fileKey: getFilePathParam_fileKey };
-type getFolderOptions = Parameters<typeof Sdk.getFolder>[0];
-type getFolderPathParam_folderKey = (NonNullable<getFolderOptions> extends { path: { folderKey: infer P } } ? P : any);
-export type getFolderInput = { folderKey: getFolderPathParam_folderKey };
-type getInfoOptions = Parameters<typeof Sdk.getInfo>[0];
+export type getFileInput = { fileKey: GetFileData['path']['fileKey'] };
+export type getFolderInput = { folderKey: GetFolderData['path']['folderKey'] };
 export type getInfoInput = void;
-type getProjectOptions = Parameters<typeof Sdk.getProject>[0];
-type getProjectPathParam_projectKey = (NonNullable<getProjectOptions> extends { path: { projectKey: infer P } } ? P : any);
-export type getProjectInput = { projectKey: getProjectPathParam_projectKey };
-type getProjectEnvironmentsOptions = Parameters<typeof Sdk.getProjectEnvironments>[0];
-type getProjectEnvironmentsPathParam_projectKey = (NonNullable<getProjectEnvironmentsOptions> extends { path: { projectKey: infer P } } ? P : any);
-export type getProjectEnvironmentsInput = { projectKey: getProjectEnvironmentsPathParam_projectKey };
-type getProjectSnapshotOptions = Parameters<typeof Sdk.getProjectSnapshot>[0];
-type getProjectSnapshotPathParam_projectSnapshotKey = (NonNullable<getProjectSnapshotOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type getProjectSnapshotInput = { projectSnapshotKey: getProjectSnapshotPathParam_projectSnapshotKey };
-type getProjectSnapshotExternalResourcesOptions = Parameters<typeof Sdk.getProjectSnapshotExternalResources>[0];
-type getProjectSnapshotExternalResourcesPathParam_projectSnapshotKey = (NonNullable<getProjectSnapshotExternalResourcesOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type getProjectSnapshotExternalResourcesInput = { projectSnapshotKey: getProjectSnapshotExternalResourcesPathParam_projectSnapshotKey };
-type getVersionOptions = Parameters<typeof Sdk.getVersion>[0];
-type getVersionPathParam_versionKey = (NonNullable<getVersionOptions> extends { path: { versionKey: infer P } } ? P : any);
-export type getVersionInput = { versionKey: getVersionPathParam_versionKey };
-type getWorkspaceOptions = Parameters<typeof Sdk.getWorkspace>[0];
-type getWorkspacePathParam_workspaceKey = (NonNullable<getWorkspaceOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type getWorkspaceInput = { workspaceKey: getWorkspacePathParam_workspaceKey };
-type getWorkspaceEnvironmentsOptions = Parameters<typeof Sdk.getWorkspaceEnvironments>[0];
-type getWorkspaceEnvironmentsPathParam_workspaceKey = (NonNullable<getWorkspaceEnvironmentsOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type getWorkspaceEnvironmentsInput = { workspaceKey: getWorkspaceEnvironmentsPathParam_workspaceKey };
-type ingestCatalogAssetsOptions = Parameters<typeof Sdk.ingestCatalogAssets>[0];
-type ingestCatalogAssetsBody = (NonNullable<ingestCatalogAssetsOptions> extends { body?: infer B } ? B : never);
-export type ingestCatalogAssetsInput = ingestCatalogAssetsBody;
-type permanentlyDeleteFileOptions = Parameters<typeof Sdk.permanentlyDeleteFile>[0];
-type permanentlyDeleteFilePathParam_fileKey = (NonNullable<permanentlyDeleteFileOptions> extends { path: { fileKey: infer P } } ? P : any);
-export type permanentlyDeleteFileInput = { fileKey: permanentlyDeleteFilePathParam_fileKey };
-type permanentlyDeleteFolderOptions = Parameters<typeof Sdk.permanentlyDeleteFolder>[0];
-type permanentlyDeleteFolderPathParam_folderKey = (NonNullable<permanentlyDeleteFolderOptions> extends { path: { folderKey: infer P } } ? P : any);
-export type permanentlyDeleteFolderInput = { folderKey: permanentlyDeleteFolderPathParam_folderKey };
-type permanentlyDeleteProjectOptions = Parameters<typeof Sdk.permanentlyDeleteProject>[0];
-type permanentlyDeleteProjectPathParam_projectKey = (NonNullable<permanentlyDeleteProjectOptions> extends { path: { projectKey: infer P } } ? P : any);
-export type permanentlyDeleteProjectInput = { projectKey: permanentlyDeleteProjectPathParam_projectKey };
-type permanentlyDeleteWorkspaceOptions = Parameters<typeof Sdk.permanentlyDeleteWorkspace>[0];
-type permanentlyDeleteWorkspacePathParam_workspaceKey = (NonNullable<permanentlyDeleteWorkspaceOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type permanentlyDeleteWorkspaceInput = { workspaceKey: permanentlyDeleteWorkspacePathParam_workspaceKey };
-type purgeFileOptions = Parameters<typeof Sdk.purgeFile>[0];
-type purgeFilePathParam_fileKey = (NonNullable<purgeFileOptions> extends { path: { fileKey: infer P } } ? P : any);
-export type purgeFileInput = { fileKey: purgeFilePathParam_fileKey };
-type removeClusterRegistrationOptions = Parameters<typeof Sdk.removeClusterRegistration>[0];
-type removeClusterRegistrationPathParam_clusterId = (NonNullable<removeClusterRegistrationOptions> extends { path: { clusterId: infer P } } ? P : any);
-export type removeClusterRegistrationInput = { clusterId: removeClusterRegistrationPathParam_clusterId };
-type removeMemberOptions = Parameters<typeof Sdk.removeMember>[0];
-type removeMemberPathParam_workspaceKey = (NonNullable<removeMemberOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-type removeMemberPathParam_email = (NonNullable<removeMemberOptions> extends { path: { email: infer P } } ? P : any);
-export type removeMemberInput = { workspaceKey: removeMemberPathParam_workspaceKey; email: removeMemberPathParam_email };
-type replaceWorkspaceEnvironmentsOptions = Parameters<typeof Sdk.replaceWorkspaceEnvironments>[0];
-type replaceWorkspaceEnvironmentsBody = (NonNullable<replaceWorkspaceEnvironmentsOptions> extends { body?: infer B } ? B : never);
-type replaceWorkspaceEnvironmentsPathParam_workspaceKey = (NonNullable<replaceWorkspaceEnvironmentsOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type replaceWorkspaceEnvironmentsInput = replaceWorkspaceEnvironmentsBody & { workspaceKey: replaceWorkspaceEnvironmentsPathParam_workspaceKey };
-type requestProjectSnapshotReviewOptions = Parameters<typeof Sdk.requestProjectSnapshotReview>[0];
-type requestProjectSnapshotReviewPathParam_projectSnapshotKey = (NonNullable<requestProjectSnapshotReviewOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type requestProjectSnapshotReviewInput = { projectSnapshotKey: requestProjectSnapshotReviewPathParam_projectSnapshotKey };
-type restoreFileOptions = Parameters<typeof Sdk.restoreFile>[0];
-type restoreFilePathParam_fileKey = (NonNullable<restoreFileOptions> extends { path: { fileKey: infer P } } ? P : any);
-export type restoreFileInput = { fileKey: restoreFilePathParam_fileKey };
-type restoreFolderOptions = Parameters<typeof Sdk.restoreFolder>[0];
-type restoreFolderPathParam_folderKey = (NonNullable<restoreFolderOptions> extends { path: { folderKey: infer P } } ? P : any);
-export type restoreFolderInput = { folderKey: restoreFolderPathParam_folderKey };
-type restoreProjectOptions = Parameters<typeof Sdk.restoreProject>[0];
-type restoreProjectPathParam_projectKey = (NonNullable<restoreProjectOptions> extends { path: { projectKey: infer P } } ? P : any);
-export type restoreProjectInput = { projectKey: restoreProjectPathParam_projectKey };
-type restoreProjectSnapshotOptions = Parameters<typeof Sdk.restoreProjectSnapshot>[0];
-type restoreProjectSnapshotPathParam_projectSnapshotKey = (NonNullable<restoreProjectSnapshotOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type restoreProjectSnapshotInput = { projectSnapshotKey: restoreProjectSnapshotPathParam_projectSnapshotKey };
-type restoreVersionOptions = Parameters<typeof Sdk.restoreVersion>[0];
-type restoreVersionBody = (NonNullable<restoreVersionOptions> extends { body?: infer B } ? B : never);
-type restoreVersionPathParam_versionKey = (NonNullable<restoreVersionOptions> extends { path: { versionKey: infer P } } ? P : any);
-export type restoreVersionInput = restoreVersionBody & { versionKey: restoreVersionPathParam_versionKey };
-type restoreWorkspaceOptions = Parameters<typeof Sdk.restoreWorkspace>[0];
-type restoreWorkspacePathParam_workspaceKey = (NonNullable<restoreWorkspaceOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type restoreWorkspaceInput = { workspaceKey: restoreWorkspacePathParam_workspaceKey };
-type searchCatalogAssetFileUsagesOptions = Parameters<typeof Sdk.searchCatalogAssetFileUsages>[0];
-type searchCatalogAssetFileUsagesBody = (NonNullable<searchCatalogAssetFileUsagesOptions> extends { body?: infer B } ? B : never);
-type searchCatalogAssetFileUsagesPathParam_assetKey = (NonNullable<searchCatalogAssetFileUsagesOptions> extends { path: { assetKey: infer P } } ? P : any);
-export type searchCatalogAssetFileUsagesInput = searchCatalogAssetFileUsagesBody & { assetKey: searchCatalogAssetFileUsagesPathParam_assetKey };
-type searchCatalogAssetProjectUsagesOptions = Parameters<typeof Sdk.searchCatalogAssetProjectUsages>[0];
-type searchCatalogAssetProjectUsagesBody = (NonNullable<searchCatalogAssetProjectUsagesOptions> extends { body?: infer B } ? B : never);
-type searchCatalogAssetProjectUsagesPathParam_assetKey = (NonNullable<searchCatalogAssetProjectUsagesOptions> extends { path: { assetKey: infer P } } ? P : any);
-export type searchCatalogAssetProjectUsagesInput = searchCatalogAssetProjectUsagesBody & { assetKey: searchCatalogAssetProjectUsagesPathParam_assetKey };
-type searchCatalogAssetsOptions = Parameters<typeof Sdk.searchCatalogAssets>[0];
-type searchCatalogAssetsBody = (NonNullable<searchCatalogAssetsOptions> extends { body?: infer B } ? B : never);
-export type searchCatalogAssetsInput = searchCatalogAssetsBody;
-type searchFilesOptions = Parameters<typeof Sdk.searchFiles>[0];
-type searchFilesBody = (NonNullable<searchFilesOptions> extends { body?: infer B } ? B : never);
-export type searchFilesInput = searchFilesBody;
-type searchMembersOptions = Parameters<typeof Sdk.searchMembers>[0];
-type searchMembersBody = (NonNullable<searchMembersOptions> extends { body?: infer B } ? B : never);
-export type searchMembersInput = searchMembersBody;
-type searchProjectCatalogAssetUsagesOptions = Parameters<typeof Sdk.searchProjectCatalogAssetUsages>[0];
-type searchProjectCatalogAssetUsagesBody = (NonNullable<searchProjectCatalogAssetUsagesOptions> extends { body?: infer B } ? B : never);
-type searchProjectCatalogAssetUsagesPathParam_projectKey = (NonNullable<searchProjectCatalogAssetUsagesOptions> extends { path: { projectKey: infer P } } ? P : any);
-export type searchProjectCatalogAssetUsagesInput = searchProjectCatalogAssetUsagesBody & { projectKey: searchProjectCatalogAssetUsagesPathParam_projectKey };
-type searchProjectsOptions = Parameters<typeof Sdk.searchProjects>[0];
-type searchProjectsBody = (NonNullable<searchProjectsOptions> extends { body?: infer B } ? B : never);
-export type searchProjectsInput = searchProjectsBody;
-type searchProjectSnapshotsOptions = Parameters<typeof Sdk.searchProjectSnapshots>[0];
-type searchProjectSnapshotsBody = (NonNullable<searchProjectSnapshotsOptions> extends { body?: infer B } ? B : never);
-export type searchProjectSnapshotsInput = searchProjectSnapshotsBody;
-type searchRecentlyDeletedFilesOptions = Parameters<typeof Sdk.searchRecentlyDeletedFiles>[0];
-type searchRecentlyDeletedFilesBody = (NonNullable<searchRecentlyDeletedFilesOptions> extends { body?: infer B } ? B : never);
-export type searchRecentlyDeletedFilesInput = searchRecentlyDeletedFilesBody;
-type searchRecentlyDeletedFoldersOptions = Parameters<typeof Sdk.searchRecentlyDeletedFolders>[0];
-type searchRecentlyDeletedFoldersBody = (NonNullable<searchRecentlyDeletedFoldersOptions> extends { body?: infer B } ? B : never);
-export type searchRecentlyDeletedFoldersInput = searchRecentlyDeletedFoldersBody;
-type searchRecentlyDeletedProjectsOptions = Parameters<typeof Sdk.searchRecentlyDeletedProjects>[0];
-type searchRecentlyDeletedProjectsBody = (NonNullable<searchRecentlyDeletedProjectsOptions> extends { body?: infer B } ? B : never);
-export type searchRecentlyDeletedProjectsInput = searchRecentlyDeletedProjectsBody;
-type searchRecentlyDeletedWorkspacesOptions = Parameters<typeof Sdk.searchRecentlyDeletedWorkspaces>[0];
-type searchRecentlyDeletedWorkspacesBody = (NonNullable<searchRecentlyDeletedWorkspacesOptions> extends { body?: infer B } ? B : never);
-export type searchRecentlyDeletedWorkspacesInput = searchRecentlyDeletedWorkspacesBody;
-type searchVersionsOptions = Parameters<typeof Sdk.searchVersions>[0];
-type searchVersionsBody = (NonNullable<searchVersionsOptions> extends { body?: infer B } ? B : never);
-export type searchVersionsInput = searchVersionsBody;
-type searchWorkspacesOptions = Parameters<typeof Sdk.searchWorkspaces>[0];
-type searchWorkspacesBody = (NonNullable<searchWorkspacesOptions> extends { body?: infer B } ? B : never);
-export type searchWorkspacesInput = searchWorkspacesBody;
-type submitProjectSnapshotReviewOptions = Parameters<typeof Sdk.submitProjectSnapshotReview>[0];
-type submitProjectSnapshotReviewBody = (NonNullable<submitProjectSnapshotReviewOptions> extends { body?: infer B } ? B : never);
-type submitProjectSnapshotReviewPathParam_projectSnapshotKey = (NonNullable<submitProjectSnapshotReviewOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type submitProjectSnapshotReviewInput = submitProjectSnapshotReviewBody & { projectSnapshotKey: submitProjectSnapshotReviewPathParam_projectSnapshotKey };
-type updateFileOptions = Parameters<typeof Sdk.updateFile>[0];
-type updateFileBody = (NonNullable<updateFileOptions> extends { body?: infer B } ? B : never);
-type updateFilePathParam_fileKey = (NonNullable<updateFileOptions> extends { path: { fileKey: infer P } } ? P : any);
-export type updateFileInput = updateFileBody & { fileKey: updateFilePathParam_fileKey };
-type updateFolderOptions = Parameters<typeof Sdk.updateFolder>[0];
-type updateFolderBody = (NonNullable<updateFolderOptions> extends { body?: infer B } ? B : never);
-type updateFolderPathParam_folderKey = (NonNullable<updateFolderOptions> extends { path: { folderKey: infer P } } ? P : any);
-export type updateFolderInput = updateFolderBody & { folderKey: updateFolderPathParam_folderKey };
-type updateProjectOptions = Parameters<typeof Sdk.updateProject>[0];
-type updateProjectBody = (NonNullable<updateProjectOptions> extends { body?: infer B } ? B : never);
-type updateProjectPathParam_projectKey = (NonNullable<updateProjectOptions> extends { path: { projectKey: infer P } } ? P : any);
-export type updateProjectInput = updateProjectBody & { projectKey: updateProjectPathParam_projectKey };
-type updateProjectSnapshotOptions = Parameters<typeof Sdk.updateProjectSnapshot>[0];
-type updateProjectSnapshotBody = (NonNullable<updateProjectSnapshotOptions> extends { body?: infer B } ? B : never);
-type updateProjectSnapshotPathParam_projectSnapshotKey = (NonNullable<updateProjectSnapshotOptions> extends { path: { projectSnapshotKey: infer P } } ? P : any);
-export type updateProjectSnapshotInput = updateProjectSnapshotBody & { projectSnapshotKey: updateProjectSnapshotPathParam_projectSnapshotKey };
-type updateVersionOptions = Parameters<typeof Sdk.updateVersion>[0];
-type updateVersionBody = (NonNullable<updateVersionOptions> extends { body?: infer B } ? B : never);
-type updateVersionPathParam_versionKey = (NonNullable<updateVersionOptions> extends { path: { versionKey: infer P } } ? P : any);
-export type updateVersionInput = updateVersionBody & { versionKey: updateVersionPathParam_versionKey };
-type updateWorkspaceOptions = Parameters<typeof Sdk.updateWorkspace>[0];
-type updateWorkspaceBody = (NonNullable<updateWorkspaceOptions> extends { body?: infer B } ? B : never);
-type updateWorkspacePathParam_workspaceKey = (NonNullable<updateWorkspaceOptions> extends { path: { workspaceKey: infer P } } ? P : any);
-export type updateWorkspaceInput = updateWorkspaceBody & { workspaceKey: updateWorkspacePathParam_workspaceKey };
+export type getProjectInput = { projectKey: GetProjectData['path']['projectKey'] };
+export type getProjectEnvironmentsInput = { projectKey: GetProjectEnvironmentsData['path']['projectKey'] };
+export type getProjectSnapshotInput = { projectSnapshotKey: GetProjectSnapshotData['path']['projectSnapshotKey'] };
+export type getProjectSnapshotExternalResourcesInput = { projectSnapshotKey: GetProjectSnapshotExternalResourcesData['path']['projectSnapshotKey'] };
+export type getVersionInput = { versionKey: GetVersionData['path']['versionKey'] };
+export type getWorkspaceInput = { workspaceKey: GetWorkspaceData['path']['workspaceKey'] };
+export type getWorkspaceEnvironmentsInput = { workspaceKey: GetWorkspaceEnvironmentsData['path']['workspaceKey'] };
+export type ingestCatalogAssetsInput = NonNullable<IngestCatalogAssetsData['body']>;
+export type permanentlyDeleteFileInput = { fileKey: PermanentlyDeleteFileData['path']['fileKey'] };
+export type permanentlyDeleteFolderInput = { folderKey: PermanentlyDeleteFolderData['path']['folderKey'] };
+export type permanentlyDeleteProjectInput = { projectKey: PermanentlyDeleteProjectData['path']['projectKey'] };
+export type permanentlyDeleteWorkspaceInput = { workspaceKey: PermanentlyDeleteWorkspaceData['path']['workspaceKey'] };
+export type purgeFileInput = { fileKey: PurgeFileData['path']['fileKey'] };
+export type removeClusterRegistrationInput = { clusterId: RemoveClusterRegistrationData['path']['clusterId'] };
+export type removeMemberInput = { workspaceKey: RemoveMemberData['path']['workspaceKey']; email: RemoveMemberData['path']['email'] };
+export type replaceWorkspaceEnvironmentsInput = NonNullable<ReplaceWorkspaceEnvironmentsData['body']> & { workspaceKey: ReplaceWorkspaceEnvironmentsData['path']['workspaceKey'] };
+export type requestProjectSnapshotReviewInput = { projectSnapshotKey: RequestProjectSnapshotReviewData['path']['projectSnapshotKey'] };
+export type restoreFileInput = { fileKey: RestoreFileData['path']['fileKey'] };
+export type restoreFolderInput = { folderKey: RestoreFolderData['path']['folderKey'] };
+export type restoreProjectInput = { projectKey: RestoreProjectData['path']['projectKey'] };
+export type restoreProjectSnapshotInput = { projectSnapshotKey: RestoreProjectSnapshotData['path']['projectSnapshotKey'] };
+export type restoreVersionInput = NonNullable<RestoreVersionData['body']> & { versionKey: RestoreVersionData['path']['versionKey'] };
+export type restoreWorkspaceInput = { workspaceKey: RestoreWorkspaceData['path']['workspaceKey'] };
+export type searchCatalogAssetFileUsagesInput = NonNullable<SearchCatalogAssetFileUsagesData['body']> & { assetKey: SearchCatalogAssetFileUsagesData['path']['assetKey'] };
+export type searchCatalogAssetProjectUsagesInput = NonNullable<SearchCatalogAssetProjectUsagesData['body']> & { assetKey: SearchCatalogAssetProjectUsagesData['path']['assetKey'] };
+export type searchCatalogAssetsInput = NonNullable<SearchCatalogAssetsData['body']>;
+export type searchFilesInput = NonNullable<SearchFilesData['body']>;
+export type searchMembersInput = NonNullable<SearchMembersData['body']>;
+export type searchProjectCatalogAssetUsagesInput = NonNullable<SearchProjectCatalogAssetUsagesData['body']> & { projectKey: SearchProjectCatalogAssetUsagesData['path']['projectKey'] };
+export type searchProjectsInput = NonNullable<SearchProjectsData['body']>;
+export type searchProjectSnapshotsInput = NonNullable<SearchProjectSnapshotsData['body']>;
+export type searchRecentlyDeletedFilesInput = NonNullable<SearchRecentlyDeletedFilesData['body']>;
+export type searchRecentlyDeletedFoldersInput = NonNullable<SearchRecentlyDeletedFoldersData['body']>;
+export type searchRecentlyDeletedProjectsInput = NonNullable<SearchRecentlyDeletedProjectsData['body']>;
+export type searchRecentlyDeletedWorkspacesInput = NonNullable<SearchRecentlyDeletedWorkspacesData['body']>;
+export type searchVersionsInput = NonNullable<SearchVersionsData['body']>;
+export type searchWorkspacesInput = NonNullable<SearchWorkspacesData['body']>;
+export type submitProjectSnapshotReviewInput = NonNullable<SubmitProjectSnapshotReviewData['body']> & { projectSnapshotKey: SubmitProjectSnapshotReviewData['path']['projectSnapshotKey'] };
+export type updateFileInput = NonNullable<UpdateFileData['body']> & { fileKey: UpdateFileData['path']['fileKey'] };
+export type updateFolderInput = NonNullable<UpdateFolderData['body']> & { folderKey: UpdateFolderData['path']['folderKey'] };
+export type updateProjectInput = NonNullable<UpdateProjectData['body']> & { projectKey: UpdateProjectData['path']['projectKey'] };
+export type updateProjectSnapshotInput = NonNullable<UpdateProjectSnapshotData['body']> & { projectSnapshotKey: UpdateProjectSnapshotData['path']['projectSnapshotKey'] };
+export type updateVersionInput = NonNullable<UpdateVersionData['body']> & { versionKey: UpdateVersionData['path']['versionKey'] };
+export type updateWorkspaceInput = NonNullable<UpdateWorkspaceData['body']> & { workspaceKey: UpdateWorkspaceData['path']['workspaceKey'] };
 const VOID_RESPONSES = new Set(['zCreateClusterRegistrationResponse', 'zRemoveClusterRegistrationResponse', 'zIngestCatalogAssetsResponse', 'zDeleteCatalogAssetResponse', 'zDeleteFileResponse', 'zPermanentlyDeleteFileResponse', 'zPurgeFileResponse', 'zDeleteFolderResponse', 'zPermanentlyDeleteFolderResponse', 'zDeleteProjectResponse', 'zPermanentlyDeleteProjectResponse', 'zDeleteProjectSnapshotResponse', 'zRestoreProjectSnapshotResponse', 'zDeleteVersionResponse', 'zDeleteWorkspaceResponse', 'zPermanentlyDeleteWorkspaceResponse', 'zRemoveMemberResponse']);
 function _isVoidResponse(name: string): boolean {
   return VOID_RESPONSES.has(name);
@@ -231,7 +86,6 @@ function _isVoidResponse(name: string): boolean {
  *
  * Adds a member to the workspace, or updates the role of an existing member. The member is identified by their email address. If that user has not logged in yet, a workspace invitation is created and an email is sent instead, and the person becomes an actual member once they log in for the first time.
  *
-  *
  * @operationId addMember
  * @tags Member
  */
@@ -300,7 +154,7 @@ export function addMember(core: HubCore, arg: any, options?: OperationOptions): 
  * Create or update a cluster registration
  *
  * Creates or updates a cluster registration in Camunda Hub via discovery. This does not provision infrastructure — it only creates or updates the cluster registration in Hub. This endpoint requires dynamic cluster management to be enabled. If a cluster with the resolved ID already exists, its registration will be updated.
-  *
+ *
  * @operationId createClusterRegistration
  * @tags Cluster
  */
@@ -363,7 +217,7 @@ export function createClusterRegistration(core: HubCore, arg: any, options?: Ope
  * Create a file
  *
  * Creates a new file in the specified project and folder.
-  *
+ *
  * @operationId createFile
  * @tags File
  */
@@ -426,7 +280,7 @@ export function createFile(core: HubCore, arg: any, options?: OperationOptions):
  * Create a folder
  *
  * Creates a new folder in the specified project and/or parent folder.
-  *
+ *
  * @operationId createFolder
  * @tags Folder
  */
@@ -489,7 +343,7 @@ export function createFolder(core: HubCore, arg: any, options?: OperationOptions
  * Create a project
  *
  * Creates a new empty project in the specified workspace.
-  *
+ *
  * @operationId createProject
  * @tags Project
  */
@@ -553,7 +407,6 @@ export function createProject(core: HubCore, arg: any, options?: OperationOption
  *
  * Creates a new project snapshot by taking a snapshot of every file currently in the project. Each file contributes one file version to the snapshot, recorded together with the file's name and folder location at that moment.
  *
-  *
  * @operationId createProjectSnapshot
  * @tags Project Snapshot
  */
@@ -617,7 +470,6 @@ export function createProjectSnapshot(core: HubCore, arg: any, options?: Operati
  *
  * Creates a new version by taking a snapshot of the current content of the specified file.
  *
-  *
  * @operationId createVersion
  * @tags Version
  */
@@ -680,7 +532,7 @@ export function createVersion(core: HubCore, arg: any, options?: OperationOption
  * Create a workspace
  *
  * Creates a new workspace in the caller's organization.
-  *
+ *
  * @operationId createWorkspace
  * @tags Workspace
  */
@@ -743,7 +595,7 @@ export function createWorkspace(core: HubCore, arg: any, options?: OperationOpti
  * Delete a catalog asset
  *
  * Deletes the catalog asset with the given asset key.
-  *
+ *
  * @operationId deleteCatalogAsset
  * @tags Catalog
  */
@@ -807,7 +659,6 @@ export function deleteCatalogAsset(core: HubCore, arg: any, options?: OperationO
  *
  * Soft-deletes the file with the given file key. The file is moved to the recently deleted state and can be recovered until the retention period expires and the scheduled cleanup job runs. To permanently and irreversibly remove a file, use `DELETE /files/{fileKey}/permanent` instead.
  *
-  *
  * @operationId deleteFile
  * @tags File
  */
@@ -870,7 +721,7 @@ export function deleteFile(core: HubCore, arg: any, options?: OperationOptions):
  * Delete a folder
  *
  * Soft-deletes the folder with the given folder key, cascading to all of its descendants. The folder is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a folder, use `DELETE /folders/{folderKey}/permanent` instead.
-  *
+ *
  * @operationId deleteFolder
  * @tags Folder
  */
@@ -934,7 +785,6 @@ export function deleteFolder(core: HubCore, arg: any, options?: OperationOptions
  *
  * Soft-deletes the project with the given project key, cascading to all of its descendant folders and files. The project is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a project, use `DELETE /projects/{projectKey}/permanent` instead.
  *
-  *
  * @operationId deleteProject
  * @tags Project
  */
@@ -1000,7 +850,6 @@ export function deleteProject(core: HubCore, arg: any, options?: OperationOption
  *
  * Deleting a project snapshot that captured a file version published to shared resources requires elevated organization access and is rejected with `403` otherwise. On SaaS, public API clients never hold elevated organization access, so deleting a snapshot that captured such a file version always fails with `403` in that case.
  *
-  *
  * @operationId deleteProjectSnapshot
  * @tags Project Snapshot
  */
@@ -1063,7 +912,7 @@ export function deleteProjectSnapshot(core: HubCore, arg: any, options?: Operati
  * Delete a version
  *
  * Deletes the specified version.
-  *
+ *
  * @operationId deleteVersion
  * @tags Version
  */
@@ -1126,7 +975,7 @@ export function deleteVersion(core: HubCore, arg: any, options?: OperationOption
  * Delete a workspace
  *
  * Soft-deletes the workspace with the given key, cascading to all of its projects, folders, files, and IDP applications. The workspace is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a workspace, use `DELETE /workspaces/{workspaceKey}/permanent` instead.
-  *
+ *
  * @operationId deleteWorkspace
  * @tags Workspace
  */
@@ -1191,7 +1040,6 @@ export function deleteWorkspace(core: HubCore, arg: any, options?: OperationOpti
  * Creates a new project in the target workspace from this project snapshot. The new project takes the current name of the snapshot's project, with a copy suffix appended if a project of that name already exists in the target workspace. If appending the suffix would exceed the maximum project name length, the base name is truncated first.
  * The duplicate is created with one project snapshot of its own, carrying the source snapshot's name and description. The source project snapshot is left unchanged.
  *
-  *
  * @operationId duplicateProjectSnapshot
  * @tags Project Snapshot
  */
@@ -1260,7 +1108,7 @@ export function duplicateProjectSnapshot(core: HubCore, arg: any, options?: Oper
  * Get all cluster registrations
  *
  * Returns all cluster registrations.
-  *
+ *
  * @operationId getClusterRegistrations
  * @tags Cluster
  */
@@ -1311,7 +1159,7 @@ export function getClusterRegistrations(core: HubCore, options?: OperationOption
  * Get cluster usage metrics
  *
  * Returns the usage metrics for a cluster. The provided token is forwarded to the Orchestration Cluster API of the target cluster, so it must additionally include the read:* permission for the orchestration-api audience.
-  *
+ *
  * @operationId getClusterUsageMetrics
  * @tags Cluster
  */
@@ -1376,7 +1224,7 @@ export function getClusterUsageMetrics(core: HubCore, arg: any, options?: Operat
  * Returns all environments available in the organization. The organization is derived from the access token.
  *
  * On SaaS, the environments are resolved from Console using the caller's own token; a token that is not authorized for Console's `cluster:read` permission is rejected with `403`. Self-Managed has no such requirement — it does not call Console — so this `cluster:read` `403` never applies there.
-  *
+ *
  * @operationId getEnvironments
  * @tags Environment
  */
@@ -1427,7 +1275,7 @@ export function getEnvironments(core: HubCore, options?: OperationOptions): Canc
  * Get a file
  *
  * Returns the file metadata and content for the given file key.
-  *
+ *
  * @operationId getFile
  * @tags File
  */
@@ -1490,7 +1338,7 @@ export function getFile(core: HubCore, arg: any, options?: OperationOptions): Ca
  * Get a folder
  *
  * Returns the folder metadata and its content (child folders and files).
-  *
+ *
  * @operationId getFolder
  * @tags Folder
  */
@@ -1554,7 +1402,6 @@ export function getFolder(core: HubCore, arg: any, options?: OperationOptions): 
  *
  * Returns metadata about the V2 API, including the API version and the organization authorized by the caller's credentials.
  *
-  *
  * @operationId getInfo
  * @tags Info
  */
@@ -1605,7 +1452,7 @@ export function getInfo(core: HubCore, options?: OperationOptions): CancelablePr
  * Get a project
  *
  * Returns the project metadata and its content (child folders and files).
-  *
+ *
  * @operationId getProject
  * @tags Project
  */
@@ -1668,7 +1515,7 @@ export function getProject(core: HubCore, arg: any, options?: OperationOptions):
  * Get a project's available environments
  *
  * Returns the environments available to the given project, which is the full set assigned to its parent workspace.
-  *
+ *
  * @operationId getProjectEnvironments
  * @tags Environment
  */
@@ -1732,7 +1579,6 @@ export function getProjectEnvironments(core: HubCore, arg: any, options?: Operat
  *
  * Returns the project snapshot metadata together with the file versions it captured. Each file version carries the content hash and the file name and folder location recorded at snapshot time. To compare two project snapshots, request both and match their file versions on `fileKey` to find the same file across both snapshots, then compare `contentHash` to detect changes.
  *
-  *
  * @operationId getProjectSnapshot
  * @tags Project Snapshot
  */
@@ -1796,7 +1642,6 @@ export function getProjectSnapshot(core: HubCore, arg: any, options?: OperationO
  *
  * Reports whether this project snapshot references resources that live outside the snapshot itself: forms, call activities, business rule tasks, and RPA resources. `false` for each flag means the snapshot does not reference anything of that kind outside itself.
  *
-  *
  * @operationId getProjectSnapshotExternalResources
  * @tags Project Snapshot
  */
@@ -1860,7 +1705,6 @@ export function getProjectSnapshotExternalResources(core: HubCore, arg: any, opt
  *
  * Returns the version metadata and the file content at that version.
  *
-  *
  * @operationId getVersion
  * @tags Version
  */
@@ -1923,7 +1767,7 @@ export function getVersion(core: HubCore, arg: any, options?: OperationOptions):
  * Get a workspace
  *
  * Returns the workspace metadata and its contained projects.
-  *
+ *
  * @operationId getWorkspace
  * @tags Workspace
  */
@@ -1986,7 +1830,7 @@ export function getWorkspace(core: HubCore, arg: any, options?: OperationOptions
  * Get a workspace's assigned environments
  *
  * Returns the environments assigned to the given workspace.
-  *
+ *
  * @operationId getWorkspaceEnvironments
  * @tags Environment
  */
@@ -2092,7 +1936,6 @@ export function getWorkspaceEnvironments(core: HubCore, arg: any, options?: Oper
  * Deprecation is lifecycle metadata that follows the latest ingestion while an asset is unpublished.
  * Changing a published asset — including only its deprecation flag — requires a higher template version.
  *
-  *
  * @operationId ingestCatalogAssets
  * @tags Catalog
  */
@@ -2156,7 +1999,6 @@ export function ingestCatalogAssets(core: HubCore, arg: any, options?: Operation
  *
  * Permanently and irreversibly removes the file with the given file key. Process application snapshot references to the file are detached so snapshot data is preserved. The file cannot be recovered afterwards. This works in one step and does not require the file to be soft-deleted first.
  *
-  *
  * @operationId permanentlyDeleteFile
  * @tags File
  */
@@ -2219,7 +2061,7 @@ export function permanentlyDeleteFile(core: HubCore, arg: any, options?: Operati
  * Permanently delete a folder
  *
  * Permanently and irreversibly removes the folder with the given folder key. The folder cannot be recovered afterwards. If the folder is live (not soft-deleted), then it must not contain any live files anywhere in its subtree. Empty live folders are removed as part of the deletion as well as any soft-deleted items in its subtree. If the folder is soft-deleted and has been the target of the operation, then it is deleted with any soft-deleted folders or files it contains. If the folder is soft-deleted but has not been the target of the operation (i.e. one of its ancestor folders/project/workspace was soft-deleted), then the operation fails with 409. Instead, delete the original target of the soft-delete operation.
-  *
+ *
  * @operationId permanentlyDeleteFolder
  * @tags Folder
  */
@@ -2283,7 +2125,6 @@ export function permanentlyDeleteFolder(core: HubCore, arg: any, options?: Opera
  *
  * Permanently and irreversibly removes the project with the given project key. The project cannot be recovered afterwards. Empty folders and version history are removed as part of the deletion. If the project is live (not soft-deleted), then it must not contain any live files anywhere in its subtree. Empty live folders are removed as part of the deletion as well as any soft-deleted items in its subtree. If the project is soft-deleted and has been the target of the operation, then it is deleted with any soft-deleted folders or files it contains. If the project is soft-deleted but has not been the target of the operation (i.e. its ancestor workspace was soft-deleted), then the operation fails with 409. Instead, delete the original target of the soft-delete operation.
  *
-  *
  * @operationId permanentlyDeleteProject
  * @tags Project
  */
@@ -2346,7 +2187,7 @@ export function permanentlyDeleteProject(core: HubCore, arg: any, options?: Oper
  * Permanently delete a workspace
  *
  * Permanently and irreversibly removes the workspace with the given key. The workspace cannot be recovered afterwards. If the workspace is already soft-deleted, it is removed along with all of its projects, folders, files, process applications, and IDP applications regardless of their contents; otherwise it must have no live files, process applications, or IDP applications, and any soft-deleted items in its subtree are removed as part of the deletion. This works in one step and does not require the workspace to be soft-deleted first.
-  *
+ *
  * @operationId permanentlyDeleteWorkspace
  * @tags Workspace
  */
@@ -2410,7 +2251,6 @@ export function permanentlyDeleteWorkspace(core: HubCore, arg: any, options?: Op
  *
  * Permanently and irrecoverably removes the file and all references to it across every process application version snapshot. Works on live and soft-deleted files. If the file row has already been permanently deleted, purge still removes any orphaned process application snapshot milestone references that point to the file by ID. Idempotent for files that never existed or have already been fully purged within the caller's organization.
  *
-  *
  * @operationId purgeFile
  * @tags File
  */
@@ -2473,7 +2313,7 @@ export function purgeFile(core: HubCore, arg: any, options?: OperationOptions): 
  * Remove a cluster registration
  *
  * Removes a cluster registration from Camunda Hub. This does not delete or deprovision the actual cluster infrastructure — it only removes the cluster registration from Hub. This endpoint requires dynamic cluster management to be enabled.
-  *
+ *
  * @operationId removeClusterRegistration
  * @tags Cluster
  */
@@ -2536,7 +2376,7 @@ export function removeClusterRegistration(core: HubCore, arg: any, options?: Ope
  * Remove a member
  *
  * Removes a member from the workspace.
-  *
+ *
  * @operationId removeMember
  * @tags Member
  */
@@ -2599,7 +2439,7 @@ export function removeMember(core: HubCore, arg: any, options?: OperationOptions
  * Replace a workspace's assigned environments
  *
  * Replaces the full set of environments assigned to the given workspace with the provided set. The request body is the exact set the workspace should end up assigned to: environments not listed are unassigned, and unassigning removes an environment from every project's selection in the workspace. Requires the `update` permission for the organization.
-  *
+ *
  * @operationId replaceWorkspaceEnvironments
  * @tags Environment
  */
@@ -2670,7 +2510,6 @@ export function replaceWorkspaceEnvironments(core: HubCore, arg: any, options?: 
  * Marks the project snapshot as awaiting review and returns the created review request. A snapshot has at most one review request: requesting a review for a snapshot that already has one is rejected with `409`, even after that request has been reviewed. A reviewed snapshot can therefore never be re-requested; create a new snapshot to start another review round. Creating a request also supersedes any pending request on a different snapshot of the same project, so a project has at most one snapshot awaiting review at a time.
  * Requesting a review adds a system-authored comment to the project's BPMN files.
  *
-  *
  * @operationId requestProjectSnapshotReview
  * @tags Project Snapshot
  */
@@ -2734,7 +2573,6 @@ export function requestProjectSnapshotReview(core: HubCore, arg: any, options?: 
  *
  * Restores a soft-deleted file back to the live project. If the file's original parent folder was also deleted, the file is restored into a new wrapper folder at the project root. The file cannot be restored if its containing project has been deleted. Only a file that is the root of its own deletion can be restored via this endpoint; a file that was soft-deleted as part of an ancestor folder, project, or workspace's deletion event must be restored through the corresponding ancestor restoration endpoint instead.
  *
-  *
  * @operationId restoreFile
  * @tags File
  */
@@ -2798,7 +2636,6 @@ export function restoreFile(core: HubCore, arg: any, options?: OperationOptions)
  *
  * Restores a soft-deleted folder back to the live project, together with the descendants that were soft-deleted with it. If the folder's original parent folder was also deleted, the folder is restored into a new wrapper folder under the nearest surviving ancestor folder, or at the project root if no ancestor folder survives. The folder cannot be restored while its containing project or workspace is still deleted. Only a folder that is the root of its own deletion can be restored via this endpoint; a folder that was soft-deleted as part of an ancestor folder, project, or workspace's deletion event must be restored through the corresponding ancestor restoration endpoint instead.
  *
-  *
  * @operationId restoreFolder
  * @tags Folder
  */
@@ -2862,7 +2699,6 @@ export function restoreFolder(core: HubCore, arg: any, options?: OperationOption
  *
  * Restores a soft-deleted project back to the live workspace, together with everything that was soft-deleted as part of the same deletion event. The project cannot be restored while its workspace is still deleted. Only a project that is the root of its own deletion can be restored via this endpoint; a project that was soft-deleted as part of its workspace's deletion event must be restored through the workspace restoration endpoint instead.
  *
-  *
  * @operationId restoreProject
  * @tags Project
  */
@@ -2927,7 +2763,6 @@ export function restoreProject(core: HubCore, arg: any, options?: OperationOptio
  * Restores the project to the state captured in this project snapshot: file contents, names and folder locations are all reset to the snapshot, files added since are removed, and files deleted since are recreated.
  * Before anything is replaced, the project's current state is preserved as a new, automatically named project snapshot, unless the project has not changed since its most recent project snapshot. The restored-to project snapshot itself is left unchanged, so it can be restored again later.
  *
-  *
  * @operationId restoreProjectSnapshot
  * @tags Project Snapshot
  */
@@ -2991,7 +2826,6 @@ export function restoreProjectSnapshot(core: HubCore, arg: any, options?: Operat
  *
  * Restores the file content to the state captured in this version. A new version is created representing the restored state, unless both the file's live content and its most recent version already match that exact content, in which case that version is returned and nothing is created. For element template files, the request body must include the target version number and a new version is always created.
  *
-  *
  * @operationId restoreVersion
  * @tags Version
  */
@@ -3061,7 +2895,6 @@ export function restoreVersion(core: HubCore, arg: any, options?: OperationOptio
  *
  * Restores a soft-deleted workspace, together with everything that was soft-deleted as part of the same deletion event.
  *
-  *
  * @operationId restoreWorkspace
  * @tags Workspace
  */
@@ -3125,7 +2958,6 @@ export function restoreWorkspace(core: HubCore, arg: any, options?: OperationOpt
  *
  * Returns the files that use the catalog asset with the given asset key, matching the given search criteria.
  *
-  *
  * @operationId searchCatalogAssetFileUsages
  * @tags Catalog
  */
@@ -3195,7 +3027,6 @@ export function searchCatalogAssetFileUsages(core: HubCore, arg: any, options?: 
  *
  * Returns the projects that use the catalog asset with the given asset key, matching the given search criteria.
  *
-  *
  * @operationId searchCatalogAssetProjectUsages
  * @tags Catalog
  */
@@ -3264,7 +3095,7 @@ export function searchCatalogAssetProjectUsages(core: HubCore, arg: any, options
  * Search catalog assets
  *
  * Returns catalog assets matching the given search criteria.
-  *
+ *
  * @operationId searchCatalogAssets
  * @tags Catalog
  */
@@ -3327,7 +3158,7 @@ export function searchCatalogAssets(core: HubCore, arg: any, options?: Operation
  * Search files
  *
  * Returns files matching the given search criteria.
-  *
+ *
  * @operationId searchFiles
  * @tags File
  */
@@ -3391,7 +3222,6 @@ export function searchFiles(core: HubCore, arg: any, options?: OperationOptions)
  *
  * Returns members matching the given search criteria. A workspace key filter is required — members cannot be searched across workspaces.
  *
-  *
  * @operationId searchMembers
  * @tags Member
  */
@@ -3456,7 +3286,6 @@ export function searchMembers(core: HubCore, arg: any, options?: OperationOption
  * Returns the catalog assets that are used within the project with the given project key, matching the given
  * search criteria.
  *
-  *
  * @operationId searchProjectCatalogAssetUsages
  * @tags Catalog
  */
@@ -3525,7 +3354,7 @@ export function searchProjectCatalogAssetUsages(core: HubCore, arg: any, options
  * Search projects
  *
  * Returns projects matching the given search criteria across all workspaces in the caller's organization.
-  *
+ *
  * @operationId searchProjects
  * @tags Project
  */
@@ -3589,7 +3418,6 @@ export function searchProjects(core: HubCore, arg: any, options?: OperationOptio
  *
  * Returns the project snapshots matching the given search criteria, scoped to the caller's organization. Restoring a project snapshot can create an additional, automatically named project snapshot capturing the state that was replaced; those appear here like any other project snapshot. Filter by `fileVersionKey` to find the project snapshots that captured a given file version.
  *
-  *
  * @operationId searchProjectSnapshots
  * @tags Project Snapshot
  */
@@ -3653,7 +3481,6 @@ export function searchProjectSnapshots(core: HubCore, arg: any, options?: Operat
  *
  * Returns soft-deleted files scoped to the caller's organization. Only files that are the root of their own deletion are listed; a file soft-deleted as part of an ancestor folder, project, or workspace's deletion event is represented by that ancestor instead, and a file deleted independently before its ancestor stays listed in its own right; use the respective recently-deleted search endpoint to access that ancestor entity. Files remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /files/{fileKey}/restoration` or permanently removed with `DELETE /files/{fileKey}/permanent`.
  *
-  *
  * @operationId searchRecentlyDeletedFiles
  * @tags File
  */
@@ -3717,7 +3544,6 @@ export function searchRecentlyDeletedFiles(core: HubCore, arg: any, options?: Op
  *
  * Returns soft-deleted folders scoped to the caller's organization. Only folders that are the root of their own deletion are listed; a folder soft-deleted as part of an ancestor folder, project, or workspace's deletion event is represented by that ancestor instead, and a folder deleted independently before its ancestor stays listed in its own right; use the respective recently-deleted search endpoint to access that ancestor entity. Folders remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /folders/{folderKey}/restoration` or permanently removed with `DELETE /folders/{folderKey}/permanent`.
  *
-  *
  * @operationId searchRecentlyDeletedFolders
  * @tags Folder
  */
@@ -3781,7 +3607,6 @@ export function searchRecentlyDeletedFolders(core: HubCore, arg: any, options?: 
  *
  * Returns soft-deleted projects scoped to the caller's organization. Only projects that are the root of their own deletion are listed; a project soft-deleted as part of an ancestor workspace's deletion event is represented by that workspace instead, and a project deleted independently before its workspace stays listed in its own right; use the respective recently-deleted search endpoint to access that workspace entity. Projects remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /projects/{projectKey}/restoration` or permanently removed with `DELETE /projects/{projectKey}/permanent`.
  *
-  *
  * @operationId searchRecentlyDeletedProjects
  * @tags Project
  */
@@ -3845,7 +3670,6 @@ export function searchRecentlyDeletedProjects(core: HubCore, arg: any, options?:
  *
  * Returns soft-deleted workspaces scoped to the caller's organization. Workspaces remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /workspaces/{workspaceKey}/restoration` or permanently removed with `DELETE /workspaces/{workspaceKey}/permanent`.
  *
-  *
  * @operationId searchRecentlyDeletedWorkspaces
  * @tags Workspace
  */
@@ -3909,7 +3733,6 @@ export function searchRecentlyDeletedWorkspaces(core: HubCore, arg: any, options
  *
  * Returns versions matching the given search criteria.
  *
-  *
  * @operationId searchVersions
  * @tags Version
  */
@@ -3972,7 +3795,7 @@ export function searchVersions(core: HubCore, arg: any, options?: OperationOptio
  * Search workspaces
  *
  * Returns workspaces matching the given search criteria. Results are scoped to the caller's organization.
-  *
+ *
  * @operationId searchWorkspaces
  * @tags Workspace
  */
@@ -4037,7 +3860,6 @@ export function searchWorkspaces(core: HubCore, arg: any, options?: OperationOpt
  * Records a review decision, with an optional comment, for a project snapshot that has a review request. A snapshot keeps accepting reviews as long as its request has not been superseded, so a follow-up review can be submitted after an earlier one. Submitting a review for a snapshot with no review request at all is rejected with `403`.
  * Submitting a review adds a system-authored comment to the project's BPMN files. The review is attributed to the public API user rather than to a person, and the API does not enforce that the reviewer differs from whoever created the snapshot.
  *
-  *
  * @operationId submitProjectSnapshotReview
  * @tags Project Snapshot
  */
@@ -4106,7 +3928,7 @@ export function submitProjectSnapshotReview(core: HubCore, arg: any, options?: O
  * Update a file
  *
  * Updates the metadata and/or content of an existing file.
-  *
+ *
  * @operationId updateFile
  * @tags File
  */
@@ -4175,7 +3997,7 @@ export function updateFile(core: HubCore, arg: any, options?: OperationOptions):
  * Update a folder
  *
  * Updates the name and/or location of an existing folder.
-  *
+ *
  * @operationId updateFolder
  * @tags Folder
  */
@@ -4244,7 +4066,7 @@ export function updateFolder(core: HubCore, arg: any, options?: OperationOptions
  * Update a project
  *
  * Updates the name and/or workspace of an existing project.
-  *
+ *
  * @operationId updateProject
  * @tags Project
  */
@@ -4313,7 +4135,7 @@ export function updateProject(core: HubCore, arg: any, options?: OperationOption
  * Update a project snapshot
  *
  * Updates the attributes of an existing project snapshot.
-  *
+ *
  * @operationId updateProjectSnapshot
  * @tags Project Snapshot
  */
@@ -4382,7 +4204,7 @@ export function updateProjectSnapshot(core: HubCore, arg: any, options?: Operati
  * Update a version
  *
  * Updates the attributes of an existing version.
-  *
+ *
  * @operationId updateVersion
  * @tags Version
  */
@@ -4451,7 +4273,7 @@ export function updateVersion(core: HubCore, arg: any, options?: OperationOption
  * Update a workspace
  *
  * Updates an existing workspace.
-  *
+ *
  * @operationId updateWorkspace
  * @tags Workspace
  */

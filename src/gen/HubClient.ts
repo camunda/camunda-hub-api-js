@@ -51,7 +51,6 @@ export class HubClientBase extends HubCore {
    *
    * Adds a member to the workspace, or updates the role of an existing member. The member is identified by their email address. If that user has not logged in yet, a workspace invitation is created and an email is sent instead, and the person becomes an actual member once they log in for the first time.
    *
-    *
    * @example Add a member to a workspace
    * ```ts
    * async function addMemberExample(workspaceKey: WorkspaceKey) {
@@ -79,7 +78,7 @@ export class HubClientBase extends HubCore {
    * Create or update a cluster registration
    *
    * Creates or updates a cluster registration in Camunda Hub via discovery. This does not provision infrastructure — it only creates or updates the cluster registration in Hub. This endpoint requires dynamic cluster management to be enabled. If a cluster with the resolved ID already exists, its registration will be updated.
-    *
+   *
    * @example Register a cluster
    * ```ts
    * async function createClusterRegistrationExample() {
@@ -105,7 +104,7 @@ export class HubClientBase extends HubCore {
    * Create a file
    *
    * Creates a new file in the specified project and folder.
-    *
+   *
    * @example Create a BPMN file
    * ```ts
    * async function createFileExample(projectKey: ProjectKey, bpmnXml: string) {
@@ -133,7 +132,7 @@ export class HubClientBase extends HubCore {
    * Create a folder
    *
    * Creates a new folder in the specified project and/or parent folder.
-    *
+   *
    * @example Create a folder in a project
    * ```ts
    * async function createFolderExample(projectKey: ProjectKey) {
@@ -156,7 +155,7 @@ export class HubClientBase extends HubCore {
    * Create a project
    *
    * Creates a new empty project in the specified workspace.
-    *
+   *
    * @example Create a project
    * ```ts
    * async function createProjectExample(workspaceKey: WorkspaceKey) {
@@ -180,7 +179,6 @@ export class HubClientBase extends HubCore {
    *
    * Creates a new project snapshot by taking a snapshot of every file currently in the project. Each file contributes one file version to the snapshot, recorded together with the file's name and folder location at that moment.
    *
-    *
    * @example Snapshot a project
    * ```ts
    * async function createProjectSnapshotExample(projectKey: ProjectKey) {
@@ -208,7 +206,6 @@ export class HubClientBase extends HubCore {
    *
    * Creates a new version by taking a snapshot of the current content of the specified file.
    *
-    *
    * @example Create a version of a file
    * ```ts
    * async function createVersionExample(fileKey: FileKey) {
@@ -235,7 +232,7 @@ export class HubClientBase extends HubCore {
    * Create a workspace
    *
    * Creates a new workspace in the caller's organization.
-    *
+   *
    * @example Create a workspace
    * ```ts
    * async function createWorkspaceExample() {
@@ -261,7 +258,7 @@ export class HubClientBase extends HubCore {
    * Delete a catalog asset
    *
    * Deletes the catalog asset with the given asset key.
-    *
+   *
    * @example Delete a catalog asset
    * ```ts
    * async function deleteCatalogAssetExample(assetKey: CatalogAssetKey) {
@@ -283,7 +280,6 @@ export class HubClientBase extends HubCore {
    *
    * Soft-deletes the file with the given file key. The file is moved to the recently deleted state and can be recovered until the retention period expires and the scheduled cleanup job runs. To permanently and irreversibly remove a file, use `DELETE /files/{fileKey}/permanent` instead.
    *
-    *
    * @example Delete a file (recoverable)
    * ```ts
    * async function deleteFileExample(fileKey: FileKey) {
@@ -305,7 +301,7 @@ export class HubClientBase extends HubCore {
    * Delete a folder
    *
    * Soft-deletes the folder with the given folder key, cascading to all of its descendants. The folder is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a folder, use `DELETE /folders/{folderKey}/permanent` instead.
-    *
+   *
    * @example Delete a folder (recoverable)
    * ```ts
    * async function deleteFolderExample(folderKey: FolderKey) {
@@ -328,7 +324,6 @@ export class HubClientBase extends HubCore {
    *
    * Soft-deletes the project with the given project key, cascading to all of its descendant folders and files. The project is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a project, use `DELETE /projects/{projectKey}/permanent` instead.
    *
-    *
    * @example Delete a project (recoverable)
    * ```ts
    * async function deleteProjectExample(projectKey: ProjectKey) {
@@ -353,7 +348,6 @@ export class HubClientBase extends HubCore {
    *
    * Deleting a project snapshot that captured a file version published to shared resources requires elevated organization access and is rejected with `403` otherwise. On SaaS, public API clients never hold elevated organization access, so deleting a snapshot that captured such a file version always fails with `403` in that case.
    *
-    *
    * @example Delete a project snapshot
    * ```ts
    * async function deleteProjectSnapshotExample(projectSnapshotKey: ProjectSnapshotKey) {
@@ -374,7 +368,7 @@ export class HubClientBase extends HubCore {
    * Delete a version
    *
    * Deletes the specified version.
-    *
+   *
    * @example Delete a version
    * ```ts
    * async function deleteVersionExample(versionKey: VersionKey) {
@@ -395,7 +389,7 @@ export class HubClientBase extends HubCore {
    * Delete a workspace
    *
    * Soft-deletes the workspace with the given key, cascading to all of its projects, folders, files, and IDP applications. The workspace is moved to the recently deleted state and can be recovered during the retention window. To permanently and irreversibly remove a workspace, use `DELETE /workspaces/{workspaceKey}/permanent` instead.
-    *
+   *
    * @example Delete a workspace (recoverable)
    * ```ts
    * async function deleteWorkspaceExample(workspaceKey: WorkspaceKey) {
@@ -419,7 +413,6 @@ export class HubClientBase extends HubCore {
    * Creates a new project in the target workspace from this project snapshot. The new project takes the current name of the snapshot's project, with a copy suffix appended if a project of that name already exists in the target workspace. If appending the suffix would exceed the maximum project name length, the base name is truncated first.
    * The duplicate is created with one project snapshot of its own, carrying the source snapshot's name and description. The source project snapshot is left unchanged.
    *
-    *
    * @example Duplicate a snapshot into another workspace
    * ```ts
    * async function duplicateProjectSnapshotExample(
@@ -445,7 +438,7 @@ export class HubClientBase extends HubCore {
    * Get all cluster registrations
    *
    * Returns all cluster registrations.
-    *
+   *
    * @example List registered clusters
    * ```ts
    * async function getClusterRegistrationsExample() {
@@ -460,7 +453,7 @@ export class HubClientBase extends HubCore {
    * @tags Cluster
    */
   getClusterRegistrations(options?: OperationOptions): CancelablePromise<_DataOf<typeof Sdk.getClusterRegistrations>>;
-  getClusterRegistrations(arg?: any, options?: OperationOptions): CancelablePromise<any> {
+  getClusterRegistrations(options?: OperationOptions): CancelablePromise<any> {
     return Ops.getClusterRegistrations(this, options);
   }
 
@@ -468,7 +461,7 @@ export class HubClientBase extends HubCore {
    * Get cluster usage metrics
    *
    * Returns the usage metrics for a cluster. The provided token is forwarded to the Orchestration Cluster API of the target cluster, so it must additionally include the read:* permission for the orchestration-api audience.
-    *
+   *
    * @example Get usage metrics for a cluster
    * ```ts
    * async function getClusterUsageMetricsExample() {
@@ -498,7 +491,7 @@ export class HubClientBase extends HubCore {
    * Returns all environments available in the organization. The organization is derived from the access token.
    *
    * On SaaS, the environments are resolved from Console using the caller's own token; a token that is not authorized for Console's `cluster:read` permission is rejected with `403`. Self-Managed has no such requirement — it does not call Console — so this `cluster:read` `403` never applies there.
-    *
+   *
    * @example List all environments
    * ```ts
    * async function getEnvironmentsExample() {
@@ -515,7 +508,7 @@ export class HubClientBase extends HubCore {
    * @tags Environment
    */
   getEnvironments(options?: OperationOptions): CancelablePromise<_DataOf<typeof Sdk.getEnvironments>>;
-  getEnvironments(arg?: any, options?: OperationOptions): CancelablePromise<any> {
+  getEnvironments(options?: OperationOptions): CancelablePromise<any> {
     return Ops.getEnvironments(this, options);
   }
 
@@ -523,7 +516,7 @@ export class HubClientBase extends HubCore {
    * Get a file
    *
    * Returns the file metadata and content for the given file key.
-    *
+   *
    * @example Get a file with its content
    * ```ts
    * async function getFileExample(fileKey: FileKey) {
@@ -546,7 +539,7 @@ export class HubClientBase extends HubCore {
    * Get a folder
    *
    * Returns the folder metadata and its content (child folders and files).
-    *
+   *
    * @example Get a folder
    * ```ts
    * async function getFolderExample(folderKey: FolderKey) {
@@ -570,7 +563,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns metadata about the V2 API, including the API version and the organization authorized by the caller's credentials.
    *
-    *
    * @example Get API information
    * ```ts
    * async function getInfoExample() {
@@ -585,7 +577,7 @@ export class HubClientBase extends HubCore {
    * @tags Info
    */
   getInfo(options?: OperationOptions): CancelablePromise<_DataOf<typeof Sdk.getInfo>>;
-  getInfo(arg?: any, options?: OperationOptions): CancelablePromise<any> {
+  getInfo(options?: OperationOptions): CancelablePromise<any> {
     return Ops.getInfo(this, options);
   }
 
@@ -593,7 +585,7 @@ export class HubClientBase extends HubCore {
    * Get a project
    *
    * Returns the project metadata and its content (child folders and files).
-    *
+   *
    * @example Get a project
    * ```ts
    * async function getProjectExample(projectKey: ProjectKey) {
@@ -617,7 +609,7 @@ export class HubClientBase extends HubCore {
    * Get a project's available environments
    *
    * Returns the environments available to the given project, which is the full set assigned to its parent workspace.
-    *
+   *
    * @example List the environments of a project
    * ```ts
    * async function getProjectEnvironmentsExample(projectKey: ProjectKey) {
@@ -641,7 +633,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns the project snapshot metadata together with the file versions it captured. Each file version carries the content hash and the file name and folder location recorded at snapshot time. To compare two project snapshots, request both and match their file versions on `fileKey` to find the same file across both snapshots, then compare `contentHash` to detect changes.
    *
-    *
    * @example Get a project snapshot
    * ```ts
    * async function getProjectSnapshotExample(projectSnapshotKey: ProjectSnapshotKey) {
@@ -665,7 +656,6 @@ export class HubClientBase extends HubCore {
    *
    * Reports whether this project snapshot references resources that live outside the snapshot itself: forms, call activities, business rule tasks, and RPA resources. `false` for each flag means the snapshot does not reference anything of that kind outside itself.
    *
-    *
    * @example List the external resources a snapshot references
    * ```ts
    * async function getProjectSnapshotExternalResourcesExample(projectSnapshotKey: ProjectSnapshotKey) {
@@ -689,7 +679,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns the version metadata and the file content at that version.
    *
-    *
    * @example Get a version
    * ```ts
    * async function getVersionExample(versionKey: VersionKey) {
@@ -712,7 +701,7 @@ export class HubClientBase extends HubCore {
    * Get a workspace
    *
    * Returns the workspace metadata and its contained projects.
-    *
+   *
    * @example Get a workspace
    * ```ts
    * async function getWorkspaceExample(workspaceKey: WorkspaceKey) {
@@ -735,7 +724,7 @@ export class HubClientBase extends HubCore {
    * Get a workspace's assigned environments
    *
    * Returns the environments assigned to the given workspace.
-    *
+   *
    * @example List the environments of a workspace
    * ```ts
    * async function getWorkspaceEnvironmentsExample(workspaceKey: WorkspaceKey) {
@@ -801,7 +790,6 @@ export class HubClientBase extends HubCore {
    * Deprecation is lifecycle metadata that follows the latest ingestion while an asset is unpublished.
    * Changing a published asset — including only its deprecation flag — requires a higher template version.
    *
-    *
    * @example Ingest a catalog asset
    * ```ts
    * async function ingestCatalogAssetsExample(readmeMarkdown: string, templateJson: string) {
@@ -827,7 +815,6 @@ export class HubClientBase extends HubCore {
    *
    * Permanently and irreversibly removes the file with the given file key. Process application snapshot references to the file are detached so snapshot data is preserved. The file cannot be recovered afterwards. This works in one step and does not require the file to be soft-deleted first.
    *
-    *
    * @example Permanently delete a file
    * ```ts
    * async function permanentlyDeleteFileExample(fileKey: FileKey) {
@@ -849,7 +836,7 @@ export class HubClientBase extends HubCore {
    * Permanently delete a folder
    *
    * Permanently and irreversibly removes the folder with the given folder key. The folder cannot be recovered afterwards. If the folder is live (not soft-deleted), then it must not contain any live files anywhere in its subtree. Empty live folders are removed as part of the deletion as well as any soft-deleted items in its subtree. If the folder is soft-deleted and has been the target of the operation, then it is deleted with any soft-deleted folders or files it contains. If the folder is soft-deleted but has not been the target of the operation (i.e. one of its ancestor folders/project/workspace was soft-deleted), then the operation fails with 409. Instead, delete the original target of the soft-delete operation.
-    *
+   *
    * @example Permanently delete a folder
    * ```ts
    * async function permanentlyDeleteFolderExample(folderKey: FolderKey) {
@@ -872,7 +859,6 @@ export class HubClientBase extends HubCore {
    *
    * Permanently and irreversibly removes the project with the given project key. The project cannot be recovered afterwards. Empty folders and version history are removed as part of the deletion. If the project is live (not soft-deleted), then it must not contain any live files anywhere in its subtree. Empty live folders are removed as part of the deletion as well as any soft-deleted items in its subtree. If the project is soft-deleted and has been the target of the operation, then it is deleted with any soft-deleted folders or files it contains. If the project is soft-deleted but has not been the target of the operation (i.e. its ancestor workspace was soft-deleted), then the operation fails with 409. Instead, delete the original target of the soft-delete operation.
    *
-    *
    * @example Permanently delete a project
    * ```ts
    * async function permanentlyDeleteProjectExample(projectKey: ProjectKey) {
@@ -894,7 +880,7 @@ export class HubClientBase extends HubCore {
    * Permanently delete a workspace
    *
    * Permanently and irreversibly removes the workspace with the given key. The workspace cannot be recovered afterwards. If the workspace is already soft-deleted, it is removed along with all of its projects, folders, files, process applications, and IDP applications regardless of their contents; otherwise it must have no live files, process applications, or IDP applications, and any soft-deleted items in its subtree are removed as part of the deletion. This works in one step and does not require the workspace to be soft-deleted first.
-    *
+   *
    * @example Permanently delete a workspace
    * ```ts
    * async function permanentlyDeleteWorkspaceExample(workspaceKey: WorkspaceKey) {
@@ -917,7 +903,6 @@ export class HubClientBase extends HubCore {
    *
    * Permanently and irrecoverably removes the file and all references to it across every process application version snapshot. Works on live and soft-deleted files. If the file row has already been permanently deleted, purge still removes any orphaned process application snapshot milestone references that point to the file by ID. Idempotent for files that never existed or have already been fully purged within the caller's organization.
    *
-    *
    * @example Purge a file
    * ```ts
    * async function purgeFileExample(fileKey: FileKey) {
@@ -938,7 +923,7 @@ export class HubClientBase extends HubCore {
    * Remove a cluster registration
    *
    * Removes a cluster registration from Camunda Hub. This does not delete or deprovision the actual cluster infrastructure — it only removes the cluster registration from Hub. This endpoint requires dynamic cluster management to be enabled.
-    *
+   *
    * @example Remove a cluster registration
    * ```ts
    * async function removeClusterRegistrationExample() {
@@ -959,7 +944,7 @@ export class HubClientBase extends HubCore {
    * Remove a member
    *
    * Removes a member from the workspace.
-    *
+   *
    * @example Remove a member from a workspace
    * ```ts
    * async function removeMemberExample(workspaceKey: WorkspaceKey, email: MemberEmail) {
@@ -980,7 +965,7 @@ export class HubClientBase extends HubCore {
    * Replace a workspace's assigned environments
    *
    * Replaces the full set of environments assigned to the given workspace with the provided set. The request body is the exact set the workspace should end up assigned to: environments not listed are unassigned, and unassigning removes an environment from every project's selection in the workspace. Requires the `update` permission for the organization.
-    *
+   *
    * @example Replace the environments of a workspace
    * ```ts
    * async function replaceWorkspaceEnvironmentsExample(workspaceKey: WorkspaceKey) {
@@ -1008,7 +993,6 @@ export class HubClientBase extends HubCore {
    * Marks the project snapshot as awaiting review and returns the created review request. A snapshot has at most one review request: requesting a review for a snapshot that already has one is rejected with `409`, even after that request has been reviewed. A reviewed snapshot can therefore never be re-requested; create a new snapshot to start another review round. Creating a request also supersedes any pending request on a different snapshot of the same project, so a project has at most one snapshot awaiting review at a time.
    * Requesting a review adds a system-authored comment to the project's BPMN files.
    *
-    *
    * @example Request a review of a snapshot
    * ```ts
    * async function requestProjectSnapshotReviewExample(projectSnapshotKey: ProjectSnapshotKey) {
@@ -1032,7 +1016,6 @@ export class HubClientBase extends HubCore {
    *
    * Restores a soft-deleted file back to the live project. If the file's original parent folder was also deleted, the file is restored into a new wrapper folder at the project root. The file cannot be restored if its containing project has been deleted. Only a file that is the root of its own deletion can be restored via this endpoint; a file that was soft-deleted as part of an ancestor folder, project, or workspace's deletion event must be restored through the corresponding ancestor restoration endpoint instead.
    *
-    *
    * @example Restore a deleted file
    * ```ts
    * async function restoreFileExample(fileKey: FileKey) {
@@ -1056,7 +1039,6 @@ export class HubClientBase extends HubCore {
    *
    * Restores a soft-deleted folder back to the live project, together with the descendants that were soft-deleted with it. If the folder's original parent folder was also deleted, the folder is restored into a new wrapper folder under the nearest surviving ancestor folder, or at the project root if no ancestor folder survives. The folder cannot be restored while its containing project or workspace is still deleted. Only a folder that is the root of its own deletion can be restored via this endpoint; a folder that was soft-deleted as part of an ancestor folder, project, or workspace's deletion event must be restored through the corresponding ancestor restoration endpoint instead.
    *
-    *
    * @example Restore a deleted folder
    * ```ts
    * async function restoreFolderExample(folderKey: FolderKey) {
@@ -1080,7 +1062,6 @@ export class HubClientBase extends HubCore {
    *
    * Restores a soft-deleted project back to the live workspace, together with everything that was soft-deleted as part of the same deletion event. The project cannot be restored while its workspace is still deleted. Only a project that is the root of its own deletion can be restored via this endpoint; a project that was soft-deleted as part of its workspace's deletion event must be restored through the workspace restoration endpoint instead.
    *
-    *
    * @example Restore a deleted project
    * ```ts
    * async function restoreProjectExample(projectKey: ProjectKey) {
@@ -1105,7 +1086,6 @@ export class HubClientBase extends HubCore {
    * Restores the project to the state captured in this project snapshot: file contents, names and folder locations are all reset to the snapshot, files added since are removed, and files deleted since are recreated.
    * Before anything is replaced, the project's current state is preserved as a new, automatically named project snapshot, unless the project has not changed since its most recent project snapshot. The restored-to project snapshot itself is left unchanged, so it can be restored again later.
    *
-    *
    * @example Restore a project to a snapshot
    * ```ts
    * async function restoreProjectSnapshotExample(projectSnapshotKey: ProjectSnapshotKey) {
@@ -1127,7 +1107,6 @@ export class HubClientBase extends HubCore {
    *
    * Restores the file content to the state captured in this version. A new version is created representing the restored state, unless both the file's live content and its most recent version already match that exact content, in which case that version is returned and nothing is created. For element template files, the request body must include the target version number and a new version is always created.
    *
-    *
    * @example Restore a file to a version
    * ```ts
    * async function restoreVersionExample(versionKey: VersionKey) {
@@ -1151,7 +1130,6 @@ export class HubClientBase extends HubCore {
    *
    * Restores a soft-deleted workspace, together with everything that was soft-deleted as part of the same deletion event.
    *
-    *
    * @example Restore a deleted workspace
    * ```ts
    * async function restoreWorkspaceExample(workspaceKey: WorkspaceKey) {
@@ -1175,7 +1153,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns the files that use the catalog asset with the given asset key, matching the given search criteria.
    *
-    *
    * @example Search the files that use a catalog asset
    * ```ts
    * async function searchCatalogAssetFileUsagesExample(assetKey: CatalogAssetKey) {
@@ -1201,7 +1178,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns the projects that use the catalog asset with the given asset key, matching the given search criteria.
    *
-    *
    * @example Search the projects that use a catalog asset
    * ```ts
    * async function searchCatalogAssetProjectUsagesExample(assetKey: CatalogAssetKey) {
@@ -1226,7 +1202,7 @@ export class HubClientBase extends HubCore {
    * Search catalog assets
    *
    * Returns catalog assets matching the given search criteria.
-    *
+   *
    * @example Search catalog assets
    * ```ts
    * async function searchCatalogAssetsExample() {
@@ -1254,7 +1230,7 @@ export class HubClientBase extends HubCore {
    * Search files
    *
    * Returns files matching the given search criteria.
-    *
+   *
    * @example Search the BPMN files in a project
    * ```ts
    * async function searchFilesExample(projectKey: ProjectKey) {
@@ -1283,7 +1259,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns members matching the given search criteria. A workspace key filter is required — members cannot be searched across workspaces.
    *
-    *
    * @example Search the members of a workspace
    * ```ts
    * async function searchMembersExample(workspaceKey: WorkspaceKey) {
@@ -1313,7 +1288,6 @@ export class HubClientBase extends HubCore {
    * Returns the catalog assets that are used within the project with the given project key, matching the given
    * search criteria.
    *
-    *
    * @example Search the catalog assets a project uses
    * ```ts
    * async function searchProjectCatalogAssetUsagesExample(projectKey: ProjectKey) {
@@ -1338,7 +1312,7 @@ export class HubClientBase extends HubCore {
    * Search projects
    *
    * Returns projects matching the given search criteria across all workspaces in the caller's organization.
-    *
+   *
    * @example Search the projects in a workspace
    * ```ts
    * async function searchProjectsExample(workspaceKey: WorkspaceKey) {
@@ -1369,7 +1343,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns the project snapshots matching the given search criteria, scoped to the caller's organization. Restoring a project snapshot can create an additional, automatically named project snapshot capturing the state that was replaced; those appear here like any other project snapshot. Filter by `fileVersionKey` to find the project snapshots that captured a given file version.
    *
-    *
    * @example Search the snapshots of a project
    * ```ts
    * async function searchProjectSnapshotsExample(projectKey: ProjectKey) {
@@ -1399,7 +1372,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns soft-deleted files scoped to the caller's organization. Only files that are the root of their own deletion are listed; a file soft-deleted as part of an ancestor folder, project, or workspace's deletion event is represented by that ancestor instead, and a file deleted independently before its ancestor stays listed in its own right; use the respective recently-deleted search endpoint to access that ancestor entity. Files remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /files/{fileKey}/restoration` or permanently removed with `DELETE /files/{fileKey}/permanent`.
    *
-    *
    * @example Search recently deleted files
    * ```ts
    * async function searchRecentlyDeletedFilesExample() {
@@ -1425,7 +1397,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns soft-deleted folders scoped to the caller's organization. Only folders that are the root of their own deletion are listed; a folder soft-deleted as part of an ancestor folder, project, or workspace's deletion event is represented by that ancestor instead, and a folder deleted independently before its ancestor stays listed in its own right; use the respective recently-deleted search endpoint to access that ancestor entity. Folders remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /folders/{folderKey}/restoration` or permanently removed with `DELETE /folders/{folderKey}/permanent`.
    *
-    *
    * @example Search recently deleted folders
    * ```ts
    * async function searchRecentlyDeletedFoldersExample() {
@@ -1451,7 +1422,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns soft-deleted projects scoped to the caller's organization. Only projects that are the root of their own deletion are listed; a project soft-deleted as part of an ancestor workspace's deletion event is represented by that workspace instead, and a project deleted independently before its workspace stays listed in its own right; use the respective recently-deleted search endpoint to access that workspace entity. Projects remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /projects/{projectKey}/restoration` or permanently removed with `DELETE /projects/{projectKey}/permanent`.
    *
-    *
    * @example Search recently deleted projects
    * ```ts
    * async function searchRecentlyDeletedProjectsExample() {
@@ -1477,7 +1447,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns soft-deleted workspaces scoped to the caller's organization. Workspaces remain listed until the retention period expires and the scheduled cleanup job runs; they can also be restored with `POST /workspaces/{workspaceKey}/restoration` or permanently removed with `DELETE /workspaces/{workspaceKey}/permanent`.
    *
-    *
    * @example Search recently deleted workspaces
    * ```ts
    * async function searchRecentlyDeletedWorkspacesExample() {
@@ -1503,7 +1472,6 @@ export class HubClientBase extends HubCore {
    *
    * Returns versions matching the given search criteria.
    *
-    *
    * @example Search the versions of a file
    * ```ts
    * async function searchVersionsExample(fileKey: FileKey) {
@@ -1532,7 +1500,7 @@ export class HubClientBase extends HubCore {
    * Search workspaces
    *
    * Returns workspaces matching the given search criteria. Results are scoped to the caller's organization.
-    *
+   *
    * @example Search workspaces
    * ```ts
    * async function searchWorkspacesExample() {
@@ -1563,7 +1531,6 @@ export class HubClientBase extends HubCore {
    * Records a review decision, with an optional comment, for a project snapshot that has a review request. A snapshot keeps accepting reviews as long as its request has not been superseded, so a follow-up review can be submitted after an earlier one. Submitting a review for a snapshot with no review request at all is rejected with `403`.
    * Submitting a review adds a system-authored comment to the project's BPMN files. The review is attributed to the public API user rather than to a person, and the API does not enforce that the reviewer differs from whoever created the snapshot.
    *
-    *
    * @example Approve a snapshot
    * ```ts
    * async function submitProjectSnapshotReviewExample(projectSnapshotKey: ProjectSnapshotKey) {
@@ -1590,7 +1557,7 @@ export class HubClientBase extends HubCore {
    * Update a file
    *
    * Updates the metadata and/or content of an existing file.
-    *
+   *
    * @example Update the content of a file
    * ```ts
    * async function updateFileExample(fileKey: FileKey, newXml: string) {
@@ -1619,7 +1586,7 @@ export class HubClientBase extends HubCore {
    * Update a folder
    *
    * Updates the name and/or location of an existing folder.
-    *
+   *
    * @example Move a folder under another folder
    * ```ts
    * async function updateFolderExample(folderKey: FolderKey, parentFolderKey: FolderKey) {
@@ -1642,7 +1609,7 @@ export class HubClientBase extends HubCore {
    * Update a project
    *
    * Updates the name and/or workspace of an existing project.
-    *
+   *
    * @example Rename or move a project
    * ```ts
    * async function updateProjectExample(projectKey: ProjectKey, targetWorkspace: WorkspaceKey) {
@@ -1669,7 +1636,7 @@ export class HubClientBase extends HubCore {
    * Update a project snapshot
    *
    * Updates the attributes of an existing project snapshot.
-    *
+   *
    * @example Update a project snapshot
    * ```ts
    * async function updateProjectSnapshotExample(projectSnapshotKey: ProjectSnapshotKey) {
@@ -1695,7 +1662,7 @@ export class HubClientBase extends HubCore {
    * Update a version
    *
    * Updates the attributes of an existing version.
-    *
+   *
    * @example Publish a version to shared resources
    * ```ts
    * async function updateVersionExample(versionKey: VersionKey) {
@@ -1718,7 +1685,7 @@ export class HubClientBase extends HubCore {
    * Update a workspace
    *
    * Updates an existing workspace.
-    *
+   *
    * @example Rename a workspace
    * ```ts
    * async function updateWorkspaceExample(workspaceKey: WorkspaceKey) {

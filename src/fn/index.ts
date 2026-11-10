@@ -10,12 +10,7 @@
  *
  * Each function takes the core as its first argument, then exactly the arguments of
  * the `HubClient` method of the same name, and behaves identically: the class
- * methods delegate to these functions. One intentional exception: for operations
- * that take no input (e.g. `getInfo`), the standalone functions honor their
- * `options` argument (`getInfo(core, { retry: false })` disables retry), while
- * the legacy class methods ignore an options argument passed to them
- * (`client.getInfo({ retry: false })` retries as usual) — a quirk preserved for
- * backward compatibility. Bundlers keep only the operations you import,
+ * methods delegate to these functions. Bundlers keep only the operations you import,
  * plus the zod schemas those operations validate with (loaded lazily, and only when
  * validation is enabled). One caveat: this relies on the bundler tree-shaking dead
  * dynamic-`import()` targets (Rollup, or esbuild without code splitting). esbuild's

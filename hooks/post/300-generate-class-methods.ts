@@ -117,34 +117,28 @@ async function main() {
   support.push(
     'type _DataOf<F> = Exclude<_RawReturn<F> extends { data: infer D } ? D : _RawReturn<F>, undefined>;'
   );
+  // Each operation's input is assembled from its public hey-api `<OpId>Data` type
+  // (exported from the package root) by indexed access, so every type the input refers
+  // to is public and documented.
+  const dataTypeOf = (opId: string) => `${opId.charAt(0).toUpperCase()}${opId.slice(1)}Data`;
+  support.push(
+    `import type { ${ops
+      .filter((o) => o.hasBody || o.pathParams.length || o.queryParams.length)
+      .map((o) => dataTypeOf(o.opId))
+      .join(', ')} } from './types.gen';`
+  );
   for (const o of ops) {
-    support.push(`type ${o.opId}Options = Parameters<typeof Sdk.${o.opId}>[0];`);
-    if (o.hasBody)
-      support.push(
-        `type ${o.opId}Body = (NonNullable<${o.opId}Options> extends { body?: infer B } ? B : never);`
-      );
-    // Path & query param extracted types (individual)
-    for (const pp of o.pathParams)
-      support.push(
-        `type ${o.opId}PathParam_${pp} = (NonNullable<${o.opId}Options> extends { path: { ${pp}: infer P } } ? P : any);`
-      );
-    for (const qp of o.queryParams)
-      support.push(
-        `type ${o.opId}QueryParam_${qp.name} = (NonNullable<${o.opId}Options> extends { query?: { ${qp.name}?: infer Q } } ? Q : any);`
-      );
-    // Build unified Input type (domain-only).
+    const data = dataTypeOf(o.opId);
     const pieces: string[] = [];
-    if (o.pathParams.length || o.queryParams.length || o.hasBody) {
-      if (o.hasBody) pieces.push(`${o.opId}Body`);
-      const extras: string[] = [];
-      for (const pp of o.pathParams) extras.push(`${pp}: ${o.opId}PathParam_${pp}`);
-      for (const qp of o.queryParams)
-        extras.push(`${qp.name}${qp.required ? '' : '?'}: ${o.opId}QueryParam_${qp.name}`);
-      if (extras.length) pieces.push(`{ ${extras.join('; ')} }`);
-      support.push(`export type ${o.opId}Input = ${pieces.join(' & ')};`);
-    } else {
-      support.push(`export type ${o.opId}Input = void;`);
-    }
+    if (o.hasBody) pieces.push(`NonNullable<${data}['body']>`);
+    const extras: string[] = [];
+    for (const pp of o.pathParams) extras.push(`${pp}: ${data}['path']['${pp}']`);
+    for (const qp of o.queryParams)
+      extras.push(
+        `${qp.name}${qp.required ? '' : '?'}: NonNullable<NonNullable<${data}['query']>['${qp.name}']>`
+      );
+    if (extras.length) pieces.push(`{ ${extras.join('; ')} }`);
+    support.push(`export type ${o.opId}Input = ${pieces.length ? pieces.join(' & ') : 'void'};`);
   }
 
   // Static VOID_RESPONSES set so the generated _isVoidResponse doesn't need runtime zod access
@@ -169,15 +163,10 @@ async function main() {
       ...(hasInput ? [`input: ${o.opId}Input`] : []),
       'options?: OperationOptions',
     ].join(', ');
-    const implParams = [hasInput ? 'arg: any' : 'arg?: any', 'options?: OperationOptions'].join(
-      ', '
-    );
-    // No-input operations: the class method keeps its historical `(arg?, options?)`
-    // implementation signature (arg is unused, so `client.op({ retry })` binds the
-    // options object to `arg`). The standalone function takes no input parameter,
-    // so `op(core, { retry })` applies the options. The class forwards its own
-    // `options` parameter, preserving its existing behaviour exactly.
-    const fnImplParams = hasInput ? implParams : publicParams;
+    // No-input operations take only `options`, in the class and the standalone function
+    // alike, so `client.getInfo({ retry: false })` applies the options.
+    const implParams = hasInput ? 'arg: any, options?: OperationOptions' : publicParams;
+    const fnImplParams = implParams;
     const forwardArgs = [...(hasInput ? ['arg'] : []), 'options'].join(', ');
     methods.push(`  ${o.opId}(${publicParams}): CancelablePromise<${returnType}>;`);
     methods.push(`  ${o.opId}(${implParams}): CancelablePromise<any> {`);
@@ -507,7 +496,8 @@ function forwardJsDoc(op: any, docs: Record<string, string>): string {
     inj.push(' *');
     inj.push(` * @operationId ${op.originalOpId}`);
     if (op.tags?.length) inj.push(` * @tags ${op.tags.join(', ')}`);
-    return base.replace(/\*\/$/, `${inj.join('\n')}\n */`);
+    // Drop the closing `*/` and any trailing blank lines before appending the tags.
+    return base.replace(/(?:\n[ \t]*\*[ \t]*)*\n[ \t]*\*\/\s*$/, `\n${inj.join('\n')}\n */`);
   }
   return buildJsDoc(op);
 }
