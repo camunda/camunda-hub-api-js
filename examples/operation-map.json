@@ -1,0 +1,464 @@
+{
+  "addMember": [
+    {
+      "file": "member.ts",
+      "region": "AddMember",
+      "label": "Add a member to a workspace"
+    }
+  ],
+  "createClusterRegistration": [
+    {
+      "file": "cluster.ts",
+      "region": "CreateClusterRegistration",
+      "label": "Register a cluster"
+    }
+  ],
+  "createFile": [
+    {
+      "file": "file.ts",
+      "region": "CreateFile",
+      "label": "Create a BPMN file"
+    }
+  ],
+  "createFolder": [
+    {
+      "file": "folder.ts",
+      "region": "CreateFolder",
+      "label": "Create a folder in a project"
+    }
+  ],
+  "createProject": [
+    {
+      "file": "project.ts",
+      "region": "CreateProject",
+      "label": "Create a project"
+    }
+  ],
+  "createProjectSnapshot": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "CreateProjectSnapshot",
+      "label": "Snapshot a project"
+    }
+  ],
+  "createVersion": [
+    {
+      "file": "version.ts",
+      "region": "CreateVersion",
+      "label": "Create a version of a file"
+    }
+  ],
+  "createWorkspace": [
+    {
+      "file": "workspace.ts",
+      "region": "CreateWorkspace",
+      "label": "Create a workspace"
+    }
+  ],
+  "deleteCatalogAsset": [
+    {
+      "file": "catalog.ts",
+      "region": "DeleteCatalogAsset",
+      "label": "Delete a catalog asset"
+    }
+  ],
+  "deleteFile": [
+    {
+      "file": "file.ts",
+      "region": "DeleteFile",
+      "label": "Delete a file (recoverable)"
+    }
+  ],
+  "deleteFolder": [
+    {
+      "file": "folder.ts",
+      "region": "DeleteFolder",
+      "label": "Delete a folder (recoverable)"
+    }
+  ],
+  "deleteProject": [
+    {
+      "file": "project.ts",
+      "region": "DeleteProject",
+      "label": "Delete a project (recoverable)"
+    }
+  ],
+  "deleteProjectSnapshot": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "DeleteProjectSnapshot",
+      "label": "Delete a project snapshot"
+    }
+  ],
+  "deleteVersion": [
+    {
+      "file": "version.ts",
+      "region": "DeleteVersion",
+      "label": "Delete a version"
+    }
+  ],
+  "deleteWorkspace": [
+    {
+      "file": "workspace.ts",
+      "region": "DeleteWorkspace",
+      "label": "Delete a workspace (recoverable)"
+    }
+  ],
+  "duplicateProjectSnapshot": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "DuplicateProjectSnapshot",
+      "label": "Duplicate a snapshot into another workspace"
+    }
+  ],
+  "getClusterRegistrations": [
+    {
+      "file": "cluster.ts",
+      "region": "GetClusterRegistrations",
+      "label": "List registered clusters"
+    }
+  ],
+  "getClusterUsageMetrics": [
+    {
+      "file": "cluster.ts",
+      "region": "GetClusterUsageMetrics",
+      "label": "Get usage metrics for a cluster"
+    }
+  ],
+  "getEnvironments": [
+    {
+      "file": "environment.ts",
+      "region": "GetEnvironments",
+      "label": "List all environments"
+    }
+  ],
+  "getFile": [
+    {
+      "file": "file.ts",
+      "region": "GetFile",
+      "label": "Get a file with its content"
+    }
+  ],
+  "getFolder": [
+    {
+      "file": "folder.ts",
+      "region": "GetFolder",
+      "label": "Get a folder"
+    }
+  ],
+  "getInfo": [
+    {
+      "file": "info.ts",
+      "region": "GetInfo",
+      "label": "Get API information"
+    }
+  ],
+  "getProject": [
+    {
+      "file": "project.ts",
+      "region": "GetProject",
+      "label": "Get a project"
+    }
+  ],
+  "getProjectEnvironments": [
+    {
+      "file": "environment.ts",
+      "region": "GetProjectEnvironments",
+      "label": "List the environments of a project"
+    }
+  ],
+  "getProjectSnapshot": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "GetProjectSnapshot",
+      "label": "Get a project snapshot"
+    }
+  ],
+  "getProjectSnapshotExternalResources": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "GetProjectSnapshotExternalResources",
+      "label": "List the external resources a snapshot references"
+    }
+  ],
+  "getVersion": [
+    {
+      "file": "version.ts",
+      "region": "GetVersion",
+      "label": "Get a version"
+    }
+  ],
+  "getWorkspace": [
+    {
+      "file": "workspace.ts",
+      "region": "GetWorkspace",
+      "label": "Get a workspace"
+    }
+  ],
+  "getWorkspaceEnvironments": [
+    {
+      "file": "environment.ts",
+      "region": "GetWorkspaceEnvironments",
+      "label": "List the environments of a workspace"
+    }
+  ],
+  "ingestCatalogAssets": [
+    {
+      "file": "catalog.ts",
+      "region": "IngestCatalogAssets",
+      "label": "Ingest a catalog asset"
+    }
+  ],
+  "permanentlyDeleteFile": [
+    {
+      "file": "file.ts",
+      "region": "PermanentlyDeleteFile",
+      "label": "Permanently delete a file"
+    }
+  ],
+  "permanentlyDeleteFolder": [
+    {
+      "file": "folder.ts",
+      "region": "PermanentlyDeleteFolder",
+      "label": "Permanently delete a folder"
+    }
+  ],
+  "permanentlyDeleteProject": [
+    {
+      "file": "project.ts",
+      "region": "PermanentlyDeleteProject",
+      "label": "Permanently delete a project"
+    }
+  ],
+  "permanentlyDeleteWorkspace": [
+    {
+      "file": "workspace.ts",
+      "region": "PermanentlyDeleteWorkspace",
+      "label": "Permanently delete a workspace"
+    }
+  ],
+  "purgeFile": [
+    {
+      "file": "file.ts",
+      "region": "PurgeFile",
+      "label": "Purge a file"
+    }
+  ],
+  "removeClusterRegistration": [
+    {
+      "file": "cluster.ts",
+      "region": "RemoveClusterRegistration",
+      "label": "Remove a cluster registration"
+    }
+  ],
+  "removeMember": [
+    {
+      "file": "member.ts",
+      "region": "RemoveMember",
+      "label": "Remove a member from a workspace"
+    }
+  ],
+  "replaceWorkspaceEnvironments": [
+    {
+      "file": "environment.ts",
+      "region": "ReplaceWorkspaceEnvironments",
+      "label": "Replace the environments of a workspace"
+    }
+  ],
+  "requestProjectSnapshotReview": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "RequestProjectSnapshotReview",
+      "label": "Request a review of a snapshot"
+    }
+  ],
+  "restoreFile": [
+    {
+      "file": "file.ts",
+      "region": "RestoreFile",
+      "label": "Restore a deleted file"
+    }
+  ],
+  "restoreFolder": [
+    {
+      "file": "folder.ts",
+      "region": "RestoreFolder",
+      "label": "Restore a deleted folder"
+    }
+  ],
+  "restoreProject": [
+    {
+      "file": "project.ts",
+      "region": "RestoreProject",
+      "label": "Restore a deleted project"
+    }
+  ],
+  "restoreProjectSnapshot": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "RestoreProjectSnapshot",
+      "label": "Restore a project to a snapshot"
+    }
+  ],
+  "restoreVersion": [
+    {
+      "file": "version.ts",
+      "region": "RestoreVersion",
+      "label": "Restore a file to a version"
+    }
+  ],
+  "restoreWorkspace": [
+    {
+      "file": "workspace.ts",
+      "region": "RestoreWorkspace",
+      "label": "Restore a deleted workspace"
+    }
+  ],
+  "searchCatalogAssetFileUsages": [
+    {
+      "file": "catalog.ts",
+      "region": "SearchCatalogAssetFileUsages",
+      "label": "Search the files that use a catalog asset"
+    }
+  ],
+  "searchCatalogAssetProjectUsages": [
+    {
+      "file": "catalog.ts",
+      "region": "SearchCatalogAssetProjectUsages",
+      "label": "Search the projects that use a catalog asset"
+    }
+  ],
+  "searchCatalogAssets": [
+    {
+      "file": "catalog.ts",
+      "region": "SearchCatalogAssets",
+      "label": "Search catalog assets"
+    }
+  ],
+  "searchFiles": [
+    {
+      "file": "file.ts",
+      "region": "SearchFiles",
+      "label": "Search the BPMN files in a project"
+    }
+  ],
+  "searchMembers": [
+    {
+      "file": "member.ts",
+      "region": "SearchMembers",
+      "label": "Search the members of a workspace"
+    }
+  ],
+  "searchProjectCatalogAssetUsages": [
+    {
+      "file": "project.ts",
+      "region": "SearchProjectCatalogAssetUsages",
+      "label": "Search the catalog assets a project uses"
+    }
+  ],
+  "searchProjectSnapshots": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "SearchProjectSnapshots",
+      "label": "Search the snapshots of a project"
+    }
+  ],
+  "searchProjects": [
+    {
+      "file": "project.ts",
+      "region": "SearchProjects",
+      "label": "Search the projects in a workspace"
+    }
+  ],
+  "searchRecentlyDeletedFiles": [
+    {
+      "file": "file.ts",
+      "region": "SearchRecentlyDeletedFiles",
+      "label": "Search recently deleted files"
+    }
+  ],
+  "searchRecentlyDeletedFolders": [
+    {
+      "file": "folder.ts",
+      "region": "SearchRecentlyDeletedFolders",
+      "label": "Search recently deleted folders"
+    }
+  ],
+  "searchRecentlyDeletedProjects": [
+    {
+      "file": "project.ts",
+      "region": "SearchRecentlyDeletedProjects",
+      "label": "Search recently deleted projects"
+    }
+  ],
+  "searchRecentlyDeletedWorkspaces": [
+    {
+      "file": "workspace.ts",
+      "region": "SearchRecentlyDeletedWorkspaces",
+      "label": "Search recently deleted workspaces"
+    }
+  ],
+  "searchVersions": [
+    {
+      "file": "version.ts",
+      "region": "SearchVersions",
+      "label": "Search the versions of a file"
+    }
+  ],
+  "searchWorkspaces": [
+    {
+      "file": "workspace.ts",
+      "region": "SearchWorkspaces",
+      "label": "Search workspaces"
+    }
+  ],
+  "submitProjectSnapshotReview": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "SubmitProjectSnapshotReview",
+      "label": "Approve a snapshot"
+    }
+  ],
+  "updateFile": [
+    {
+      "file": "file.ts",
+      "region": "UpdateFile",
+      "label": "Update the content of a file"
+    }
+  ],
+  "updateFolder": [
+    {
+      "file": "folder.ts",
+      "region": "UpdateFolder",
+      "label": "Move a folder under another folder"
+    }
+  ],
+  "updateProject": [
+    {
+      "file": "project.ts",
+      "region": "UpdateProject",
+      "label": "Rename or move a project"
+    }
+  ],
+  "updateProjectSnapshot": [
+    {
+      "file": "project-snapshot.ts",
+      "region": "UpdateProjectSnapshot",
+      "label": "Update a project snapshot"
+    }
+  ],
+  "updateVersion": [
+    {
+      "file": "version.ts",
+      "region": "UpdateVersion",
+      "label": "Publish a version to shared resources"
+    }
+  ],
+  "updateWorkspace": [
+    {
+      "file": "workspace.ts",
+      "region": "UpdateWorkspace",
+      "label": "Rename a workspace"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true
+  },
+  // Everything that type-checks from source alone, with no build required — so this
+  // runs on a fresh checkout (and in the CI `quality` job, which does not build).
+  //
+  // `examples` is absent: it is type-checked against source by
+  // `hooks/post/950-typecheck-examples.ts` (via `examples/tsconfig.json`, which maps the
+  // package name to `src/index.ts`), and against the built `dist/*.d.ts` by
+  // `tsconfig.typecheck.dist.json`, which `npm run build` runs after tsup.
+  "include": ["src", "scripts", "tests", "hooks", "plugins"],
+  "exclude": ["dist", "node_modules", "src/template"]
+}

@@ -1,0 +1,56 @@
+// Factory producing a client with all CamundaKey<T>-branded string types downgraded to plain string.
+// Purely a type-level transformation: runtime behavior identical to createHubClient.
+
+import type { CancelablePromise } from './gen/HubClient';
+import { createHubClient } from './gen/HubClient';
+import type { WithSearchPagination } from './runtime/searchPagination';
+
+// Detect a branded string of the form string & { readonly __brand: ... }
+type IsBrandedKey<T> = T extends string & { readonly __brand: infer _B } ? true : false;
+
+// Transform function parameters & return types recursively.
+// We handle promises, arrays, readonly arrays, objects, and functions.
+// Note: We relax types only (brand -> string) so casting is safe.
+export type Loose<T> =
+  // Branded key -> plain string
+  IsBrandedKey<T> extends true
+    ? string
+    : // Preserve cancelable promise wrapper while loosening inner payload
+      T extends CancelablePromise<infer P>
+      ? CancelablePromise<Loose<P>>
+      : // Generic promise unwrap & rewrap
+        T extends Promise<infer P>
+        ? Promise<Loose<P>>
+        : // Arrays
+          T extends (infer U)[]
+          ? Loose<U>[]
+          : T extends ReadonlyArray<infer U>
+            ? ReadonlyArray<Loose<U>>
+            : // Functions
+              T extends (...a: infer A) => infer R
+              ? (...a: { [I in keyof A]: Loose<A[I]> }) => Loose<R>
+              : // Objects (exclude primitives/Date/etc.)
+                T extends object
+                ? { [K in keyof T]: Loose<T[K]> }
+                : // Fallback: leave as-is
+                  T;
+
+/**
+ * Create a client where all branded key types are widened to string.
+ * Use when integrating with external systems or when dynamic string keys are common and brand friction is unwanted.
+ * For maximum type safety prefer the strict createHubClient.
+ *
+ * `Loose<T>` rebuilds callable types and drops properties attached to them, which
+ * would strip the `.paginate` methods installed on every `search*` operation. We
+ * re-apply `WithSearchPagination` on top of the loosened client so loose clients
+ * keep `.paginate` in their static type (recomputed from the loosened search
+ * signatures), matching the runtime wrappers the constructor installs.
+ */
+export function createHubClientLoose(
+  ...args: Parameters<typeof createHubClient>
+): WithSearchPagination<Loose<ReturnType<typeof createHubClient>>> {
+  const strict = createHubClient(...args);
+  return strict as unknown as WithSearchPagination<Loose<ReturnType<typeof createHubClient>>>;
+}
+
+export type HubClientLoose = ReturnType<typeof createHubClientLoose>;

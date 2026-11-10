@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022", "DOM"],
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@camunda8/hub-api": ["./dist/index.d.ts"],
+      "@camunda8/hub-api/fn": ["./dist/fn/index.d.ts"]
+    }
+  },
+  // Type-checks the examples against the *built* package (`dist/`) rather than source.
+  // They can only be checked once tsup has emitted `dist/`, so `npm run build` runs this
+  // after the bundle step rather than `npm run typecheck` running it on a bare checkout.
+  //
+  // This is not redundant with the declaration build or with hook 950 (which checks the
+  // examples against `src`): `tsup --dts` checks that `src` produces valid types, while
+  // this checks that real consumer code still compiles against the emitted declarations.
+  "include": ["examples/*.ts"],
+  "exclude": ["node_modules", "src/template"]
+}

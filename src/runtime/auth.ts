@@ -1,0 +1,429 @@
+import { type Clock, liveClock } from './clock';
+import type { Logger } from './logger';
+import { type FetchLike, withMtls } from './mtls';
+import { liveRandom, type RandomSource } from './random';
+import type {
+  TelemetryAuthErrorEvent,
+  TelemetryAuthStartEvent,
+  TelemetryAuthSuccessEvent,
+  TelemetryHooks,
+} from './telemetry';
+import type { HubConfig } from './unifiedConfiguration';
+import { node } from '#platform';
+
+/** Auth error codes */
+export enum CamundaAuthErrorCode {
+  TOKEN_FETCH_FAILED = 'TOKEN_FETCH_FAILED',
+  TOKEN_PARSE_FAILED = 'TOKEN_PARSE_FAILED',
+  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
+  TOKEN_REFRESH_CONFLICT = 'TOKEN_REFRESH_CONFLICT',
+  OAUTH_CONFIG_MISSING = 'OAUTH_CONFIG_MISSING',
+  MTLS_CONFIG_MISSING = 'MTLS_CONFIG_MISSING',
+  MTLS_LOAD_FAILED = 'MTLS_LOAD_FAILED',
+}
+
+export class CamundaAuthError extends Error {
+  constructor(
+    public code: CamundaAuthErrorCode,
+    message: string,
+    public cause?: any
+  ) {
+    super(`${code}: ${message}`);
+    this.name = 'CamundaAuthError';
+  }
+}
+
+export interface AuthTokenCacheEntry {
+  access_token: string;
+  token_type?: string;
+  scope?: string;
+  expires_at_epoch_ms: number; // real expiry (provider exp - skew buffer)
+  obtained_at_epoch_ms: number; // when fetched
+  oauth_url: string;
+  client_id?: string;
+  audience?: string;
+}
+
+type HeadersHook = (
+  headers: Record<string, string>
+) => Promise<Record<string, string>> | Record<string, string>;
+
+/** Internal singleflight & state */
+class OAuthManager {
+  private refreshing: Promise<string> | null = null;
+  private token: AuthTokenCacheEntry | null = null;
+  private readonly storageKey: string;
+  private readonly isBrowser = typeof window !== 'undefined';
+  private readonly session: Storage | null;
+  constructor(
+    private cfg: HubConfig,
+    private logger: Logger,
+    private tHooks?: TelemetryHooks,
+    private correlationProvider?: () => string | undefined,
+    private clock: Clock = liveClock,
+    private random: RandomSource = liveRandom
+  ) {
+    const hashBase = `${cfg.oauth.oauthUrl}|${cfg.oauth.clientId || ''}|${cfg.tokenAudience}|${cfg.oauth.scope || ''}`;
+    this.storageKey = `camunda_oauth_token_cache_${this.simpleHash(hashBase)}`;
+    this.session =
+      this.isBrowser && typeof window.sessionStorage !== 'undefined' ? window.sessionStorage : null;
+    // Load disk cache (Node) or session cache (browser)
+    this.loadPersisted();
+  }
+  private simpleHash(s: string): string {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+    }
+    return (h >>> 0).toString(16);
+  }
+  private log(...args: any[]) {
+    this.logger.debug(...args);
+  }
+  private now() {
+    return this.clock.now();
+  }
+  private loadPersisted() {
+    if (this.session) {
+      try {
+        const raw = this.session.getItem(this.storageKey);
+        if (raw) {
+          this.token = JSON.parse(raw);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!this.session && this.cfg.oauth.cacheDir && node && this.isNode()) {
+      try {
+        const { fs, path } = node;
+        const file = path.join(this.cfg.oauth.cacheDir, `${this.storageKey}.json`);
+        if (fs.existsSync(file)) {
+          const raw = fs.readFileSync(file, 'utf8');
+          this.token = JSON.parse(raw);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  private persist() {
+    if (this.token) {
+      if (this.session) {
+        try {
+          this.session.setItem(this.storageKey, JSON.stringify(this.token));
+        } catch {
+          /* ignore */
+        }
+      } else if (this.cfg.oauth.cacheDir && node && this.isNode()) {
+        try {
+          const { fs, path } = node;
+          if (!fs.existsSync(this.cfg.oauth.cacheDir))
+            fs.mkdirSync(this.cfg.oauth.cacheDir, { recursive: true });
+          const file = path.join(this.cfg.oauth.cacheDir, `${this.storageKey}.json`);
+          const tmp = `${file}.tmp`;
+          fs.writeFileSync(tmp, JSON.stringify(this.token), { mode: 0o600 });
+          fs.renameSync(tmp, file);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+  private isNode() {
+    return typeof process !== 'undefined' && !!process.versions?.node;
+  }
+  private effectiveExpiry(t: AuthTokenCacheEntry) {
+    return t.expires_at_epoch_ms;
+  }
+  private shouldRefresh(t: AuthTokenCacheEntry) {
+    const now = this.now();
+    if (now < t.obtained_at_epoch_ms - 30000) {
+      // clock jumped backwards
+      this.log('Clock skew backwards detected; invalidating token');
+      return true;
+    }
+    const refreshLead = 5000; // 5s lead
+    return now >= this.effectiveExpiry(t) - refreshLead;
+  }
+  async getToken(
+    fetcher: (input: RequestInfo, init?: RequestInit) => Promise<Response>
+  ): Promise<string> {
+    if (this.token && !this.shouldRefresh(this.token)) return this.token.access_token;
+    if (this.refreshing) {
+      try {
+        return await this.refreshing;
+      } catch (e) {
+        if (this.token && !this.shouldRefresh(this.token)) return this.token.access_token; // keep old until expiry
+        throw e;
+      }
+    }
+    this.refreshing = this.fetchAndStore(fetcher).finally(() => {
+      this.refreshing = null;
+    });
+    return this.refreshing;
+  }
+  async forceRefresh(
+    fetcher: (input: RequestInfo, init?: RequestInit) => Promise<Response>
+  ): Promise<string> {
+    this.refreshing = this.fetchAndStore(fetcher).finally(() => {
+      this.refreshing = null;
+    });
+    return this.refreshing;
+  }
+  clearCache(opts: { disk?: boolean; memory?: boolean } = { disk: true, memory: true }) {
+    if (opts.memory) this.token = null;
+    if (opts.disk) {
+      if (this.session) {
+        this.session.removeItem(this.storageKey);
+      } else if (this.cfg.oauth.cacheDir && node && this.isNode()) {
+        try {
+          const { fs, path } = node;
+          const file = path.join(this.cfg.oauth.cacheDir, `${this.storageKey}.json`);
+          if (fs.existsSync(file)) fs.unlinkSync(file);
+        } catch {
+          /*ignore*/
+        }
+      }
+    }
+  }
+  private async fetchAndStore(
+    fetcher: (input: RequestInfo, init?: RequestInit) => Promise<Response>
+  ): Promise<string> {
+    if (!this.cfg.oauth.clientId || !this.cfg.oauth.clientSecret)
+      throw new CamundaAuthError(
+        CamundaAuthErrorCode.OAUTH_CONFIG_MISSING,
+        'Missing OAuth client credentials'
+      );
+    const body = new URLSearchParams();
+    body.set('grant_type', this.cfg.oauth.grantType || 'client_credentials');
+    body.set('client_id', this.cfg.oauth.clientId);
+    body.set('client_secret', this.cfg.oauth.clientSecret);
+    body.set('audience', this.cfg.tokenAudience);
+    if (this.cfg.oauth.scope) body.set('scope', this.cfg.oauth.scope);
+    const max = this.cfg.oauth.retry.max || 5;
+    const base = this.cfg.oauth.retry.baseDelayMs || 1000;
+    let attempt = 0;
+    let lastErr: any;
+    // Durations are measured, not derived from the token clock: `now` below is the injected
+    // clock and may be pinned, which would make an elapsed time meaningless or negative.
+    const startedAt = liveClock.now();
+    while (attempt < max) {
+      const controller = new AbortController();
+      const timeout = liveClock.deadline(this.cfg.oauth.timeoutMs);
+      timeout.signal.addEventListener('abort', () => controller.abort(), { once: true });
+      try {
+        if (attempt === 0) {
+          const evt: TelemetryAuthStartEvent = {
+            type: 'auth.start',
+            // biome-ignore lint/plugin: telemetry event timestamp: must be real wall-clock so emitted events correlate with external logs, and never drives cadence
+            ts: Date.now(),
+            audience: this.cfg.tokenAudience,
+            endpoint: this.cfg.oauth.oauthUrl,
+            cache: !!this.token,
+            correlationId: this.correlationProvider?.(),
+          };
+          try {
+            this.tHooks?.authStart?.(evt);
+          } catch {
+            /* ignore */
+          }
+        }
+        this.logger.debug(`OAuth token attempt ${attempt + 1}/${max}`);
+        const res = await fetcher(this.cfg.oauth.oauthUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+          signal: controller.signal,
+        });
+        timeout.dispose();
+        if (!res.ok) {
+          lastErr = new Error(`HTTP ${res.status}`);
+          throw lastErr;
+        }
+        const json: any = await res.json();
+        if (!json.access_token || !json.expires_in)
+          throw new CamundaAuthError(
+            CamundaAuthErrorCode.TOKEN_PARSE_FAILED,
+            'Missing access_token or expires_in in response'
+          );
+        const now = this.now();
+        const lifetimeMs = json.expires_in * 1000;
+        const skewBuffer = Math.max(30000, Math.floor(lifetimeMs * 0.05));
+        const entry: AuthTokenCacheEntry = {
+          access_token: json.access_token,
+          token_type: json.token_type,
+          scope: json.scope,
+          obtained_at_epoch_ms: now,
+          expires_at_epoch_ms: now + lifetimeMs - skewBuffer,
+          oauth_url: this.cfg.oauth.oauthUrl,
+          client_id: this.cfg.oauth.clientId,
+          audience: this.cfg.tokenAudience,
+        };
+        this.token = entry;
+        this.persist();
+        this.logger.info(
+          'Token fetched; effective expiry (s)=',
+          Math.round((entry.expires_at_epoch_ms - now) / 1000)
+        );
+        try {
+          const evt: TelemetryAuthSuccessEvent = {
+            type: 'auth.success',
+            // biome-ignore lint/plugin: telemetry event timestamp: must be real wall-clock so emitted events correlate with external logs, and never drives cadence
+            ts: Date.now(),
+            audience: this.cfg.tokenAudience,
+            endpoint: this.cfg.oauth.oauthUrl,
+            cached: false,
+            durationMs: liveClock.now() - startedAt,
+            expiresInSec: Math.round((entry.expires_at_epoch_ms - now) / 1000),
+            scopes: entry.scope ? String(entry.scope).split(/\s+/) : undefined,
+            correlationId: this.correlationProvider?.(),
+          };
+          this.tHooks?.authSuccess?.(evt);
+        } catch {
+          /* ignore */
+        }
+        return entry.access_token;
+      } catch (e: any) {
+        timeout.dispose();
+        lastErr = e;
+        attempt++;
+        if (attempt >= max) break;
+        const delay = base * 2 ** (attempt - 1);
+        const jitter = delay * 0.2 * (this.random.next() - 0.5); // +/-10%
+        const sleep = delay + jitter;
+        try {
+          // Emit retry event (domain auth) with computed next delay
+          this.tHooks?.retry?.({
+            type: 'retry',
+            // biome-ignore lint/plugin: telemetry event timestamp: must be real wall-clock so emitted events correlate with external logs, and never drives cadence
+            ts: Date.now(),
+            attempt,
+            nextDelayMs: Math.round(sleep),
+            reason: lastErr?.message || 'error',
+            domain: 'auth',
+            correlationId: this.correlationProvider?.(),
+          });
+        } catch {
+          /* ignore */
+        }
+        await this.clock.sleep(sleep);
+      }
+    }
+    try {
+      const evt: TelemetryAuthErrorEvent = {
+        type: 'auth.error',
+        // biome-ignore lint/plugin: telemetry event timestamp: must be real wall-clock so emitted events correlate with external logs, and never drives cadence
+        ts: Date.now(),
+        audience: this.cfg.tokenAudience,
+        endpoint: this.cfg.oauth.oauthUrl,
+        durationMs: liveClock.now() - startedAt,
+        status: lastErr?.message?.match(/HTTP (\d+)/)?.[1] ? parseInt(RegExp.$1, 10) : undefined,
+        message: lastErr?.message || String(lastErr),
+        correlationId: this.correlationProvider?.(),
+      };
+      this.tHooks?.authError?.(evt);
+    } catch {
+      /* ignore */
+    }
+    throw new CamundaAuthError(
+      CamundaAuthErrorCode.TOKEN_FETCH_FAILED,
+      `Failed to fetch token after ${max} attempts: ${lastErr?.message || lastErr}`,
+      lastErr
+    );
+  }
+}
+
+export interface AuthFacade {
+  getAuthHeaders(): Promise<Record<string, string>>;
+  forceRefresh(): Promise<string | undefined>;
+  clearCache(opts?: { disk?: boolean; memory?: boolean }): void;
+  registerHeadersHook(h: HeadersHook): void;
+  /** test-only helper */
+  debug__setTokenExpiry?(epochMs: number): void;
+}
+
+export function createAuthFacade(
+  config: HubConfig,
+  opts?: {
+    fetch?: (input: RequestInfo, init?: RequestInit) => Promise<Response>;
+    logger?: Logger;
+    telemetryHooks?: TelemetryHooks;
+    correlationProvider?: () => string | undefined;
+    clock?: Clock;
+    random?: RandomSource;
+    /** The supplied fetch already applies the mTLS config (set by HubCore). */
+    mtlsApplied?: boolean;
+  }
+): AuthFacade {
+  const cfg = config;
+  const noop: Logger = {
+    level: () => 'silent',
+    setLevel: () => {},
+    setTransport: () => {},
+    error: () => {},
+    warn: () => {},
+    info: () => {},
+    debug: () => {},
+    trace: () => {},
+    silly: () => {},
+    code: () => {},
+    scope: () => noop,
+  };
+  const authLogger = (opts?.logger || noop).scope('auth');
+  const tHooks = opts?.telemetryHooks;
+  const hooks: HeadersHook[] = [];
+  let oauth: OAuthManager | null = null;
+  if (cfg.auth.strategy === 'OAUTH')
+    oauth = new OAuthManager(
+      cfg,
+      authLogger.scope('oauth'),
+      tHooks,
+      opts?.correlationProvider,
+      opts?.clock ?? liveClock,
+      opts?.random ?? liveRandom
+    );
+  // mTLS (Node): Node's fetch ignores an https.Agent; TLS material must travel as an
+  // undici dispatcher (#540). HubCore passes a fetch that already applies mTLS.
+  let withAgent: (input: RequestInfo, init?: RequestInit) => Promise<Response> = (input, init) =>
+    opts?.fetch ? opts.fetch(input, init) : fetch(input, init);
+  if (cfg.mtls && !opts?.mtlsApplied) {
+    try {
+      const mtlsFetch = withMtls(cfg, opts?.fetch as FetchLike | undefined);
+      if (mtlsFetch) withAgent = mtlsFetch as typeof withAgent;
+    } catch (e) {
+      authLogger.warn(
+        'Failed to load mTLS material – proceeding without mTLS',
+        (e as any)?.message || e
+      );
+    }
+  }
+  return {
+    async getAuthHeaders() {
+      const h: Record<string, string> = {};
+      if (oauth) h.Authorization = `Bearer ${await oauth.getToken(withAgent)}`;
+      let acc = h;
+      for (const hook of hooks) {
+        acc = await hook(acc);
+      }
+      return acc;
+    },
+    async forceRefresh() {
+      if (oauth) return oauth.forceRefresh(withAgent);
+      return undefined;
+    },
+    clearCache(opts) {
+      if (oauth) oauth.clearCache(opts);
+    },
+    registerHeadersHook(h) {
+      hooks.push(h);
+    },
+    debug__setTokenExpiry(epochMs: number) {
+      // biome-ignore lint/complexity/useLiteralKeys: bracket notation bypasses TS private access check
+      if (oauth?.['token']) {
+        (oauth as any).token.expires_at_epoch_ms = epochMs;
+      }
+    },
+  };
+}
+// (No default singleton export; auth is instance-scoped via Camunda constructor.)

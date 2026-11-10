@@ -1,0 +1,160 @@
+name: PR & Branch CI
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - 'stable/**'
+  pull_request:
+    branches:
+      - main
+      - 'stable/**'
+
+jobs:
+  commitlint:
+    if: github.event_name == 'pull_request'
+    uses: camunda/sdk-infra/.github/workflows/sdk-commitlint.yml@v1
+
+  breaking-change-guard:
+    if: github.event_name == 'pull_request'
+    uses: camunda/sdk-infra/.github/workflows/sdk-breaking-change-guard.yml@v1
+
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: Generate
+        run: npm run generate
+      - name: Lint & format (Biome)
+        run: npm run format:check
+      - name: Typecheck
+        run: npm run typecheck
+
+  # Blocking guard: regenerating from the spec bundle COMMITTED IN THIS BRANCH must
+  # reproduce the committed `src/gen` byte-for-byte.
+  #
+  # Generation never fetches the spec (camunda/camunda-hub is private); it always reads
+  # the vendored `external-spec/bundled/rest-api.bundle.json`. So any drift here is
+  # attributable to this PR: a change to the generator version or to the hooks in
+  # `hooks/` must land together with its regenerated output. In particular a Renovate
+  # bump of @hey-api/openapi-ts touches only package.json and the lockfile; failing
+  # here forces the regenerated client diff into the PR for review.
+  generation-drift:
+    name: Generation Drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: Regenerate from the committed spec bundle
+        run: npx tsx scripts/run-pipeline.ts --no-test
+      - name: Fail if regeneration changed committed output
+        id: drift
+        run: |
+          # --porcelain (not `git diff`) so newly *created* generated files —
+          # e.g. a test scaffold for a new operation — also count as drift.
+          if [ -z "$(git status --porcelain)" ]; then
+            echo 'No generation drift.'
+            exit 0
+          fi
+          git add -A
+          git diff --cached > _generation-drift.patch
+          {
+            echo '### Generation drift detected'
+            echo ''
+            echo 'Regenerating from the spec bundle committed in this branch produced changes,'
+            echo 'so the committed generated code no longer matches the toolchain in this PR.'
+            echo ''
+            echo 'Fix: run `npm run generate` locally, review the diff (especially'
+            echo '`src/gen/client/`, `src/gen/HubClient.ts` and `src/gen/zod.gen.ts` — these'
+            echo 'carry runtime behaviour, not just types), and commit it in this PR.'
+            echo ''
+            echo 'Changed files:'
+            echo '```'
+            git diff --cached --name-status
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          echo '::error::Generation drift: committed generated code does not match this PR'"'"'s generator and hooks. See the job summary.'
+          git diff --cached --name-status | sed 's/^/DRIFT: /'
+          exit 1
+      - name: Upload Drift Patch
+        if: failure() && steps.drift.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: generation-drift
+          path: _generation-drift.patch
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        # Must stay within `engines.node` of both this package (>=22) and
+        # @hey-api/openapi-ts (>=22.18.0) — `npm run build` regenerates via the generator.
+        node: [22.x, 24.x]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - name: Install deps
+        run: npm ci
+      # Runs the generator (and unit tests) against the committed spec, then bundles,
+      # type-checks the examples against dist, and checks browser bundles and tree-shaking.
+      - name: Build
+        run: npm run build
+      - name: Example coverage
+        run: |
+          node scripts/check-example-coverage.cjs
+          node scripts/check-method-example-completeness.cjs
+      - name: Dist smoke (ESM + CJS)
+        run: node tests/dist-usage.smoke.mjs
+
+  cross-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      # Packs the package, installs the tarball and runs tests/cross-runtime.smoke.mjs
+      # under Node, Deno and Bun. No live Hub: requests go to a stub fetch.
+      - name: Cross-runtime smoke
+        run: npm run test:cross-runtime

@@ -1,0 +1,113 @@
+name: Spec Sync
+
+# Re-bundles the Hub public API spec from camunda/camunda-hub (private) and, when it
+# changed, opens (or updates) a PR with the new vendored bundle and the regenerated client.
+#
+# Needs the camunda-sdk-automation GitHub App installed on camunda/camunda-hub with
+# `contents: read`, in addition to this repository (contents + pull-requests: write).
+
+on:
+  schedule:
+    - cron: '17 5 * * 1-5' # weekdays 05:17 UTC
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'camunda/camunda-hub ref to bundle from'
+        required: false
+        default: 'main'
+
+concurrency:
+  group: camunda-hub-api-js-spec-sync
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write # Vault JWT auth
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/agentic-experience/github.com/apps/camunda/camunda-sdk-automation GITHUB_APP_ID | APP_ID ;
+            secret/data/products/agentic-experience/github.com/apps/camunda/camunda-sdk-automation GITHUB_APP_PRIVATE_KEY | APP_PRIVATE_KEY ;
+
+      # One token scoped to both repos: read the private spec source, write the PR here.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ steps.secrets.outputs.APP_ID }}
+          private-key: ${{ steps.secrets.outputs.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+            camunda-hub
+
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Re-bundle spec from camunda/camunda-hub
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SPEC_REF: ${{ inputs.ref || 'main' }}
+        run: npm run spec:fetch
+
+      # spec-source.json records the source commit and changes on every Hub commit;
+      # only open a PR when the bundled spec or its metadata actually changed.
+      - name: Detect spec change
+        id: diff
+        run: |
+          if git diff --quiet -- external-spec/bundled/rest-api.bundle.json external-spec/bundled/spec-metadata.json; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'Spec unchanged.'
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            echo "commit=$(jq -r .commit external-spec/bundled/spec-source.json | cut -c1-10)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Regenerate and build
+        if: steps.diff.outputs.changed == 'true'
+        run: npm run build
+
+      - name: Open or update PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          COMMIT: ${{ steps.diff.outputs.commit }}
+        run: |
+          set -euo pipefail
+          BRANCH=automation/spec-sync
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
+          git switch -C "$BRANCH"
+          git add -A
+          git commit -m "feat(spec): sync Hub public API spec (camunda-hub@${COMMIT})"
+          git push --force origin "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --head "$BRANCH" --base main \
+              --title "feat(spec): sync Hub public API spec" \
+              --body "Re-bundled from camunda/camunda-hub@${COMMIT} by spec-sync.yml, with the client regenerated. Review \`src/gen/\` for API changes; a removed or changed operation needs a \`BREAKING CHANGE:\` footer before merge."
+          fi

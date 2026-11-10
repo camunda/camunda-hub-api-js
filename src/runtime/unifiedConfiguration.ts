@@ -1,0 +1,726 @@
+// Unified configuration hydration rebuilt on top of configSchema + typed-env.
+// Single source of truth: configSchema.ts (SCHEMA)
+// Responsibilities kept: precedence, conditional requirements, validation grammar,
+// strict parsing (booleans, ints), secrets redaction, aggregated errors.
+
+import { createEnv } from 'typed-env';
+import { liveClock } from './clock';
+import {
+  aliases as aliasesMeta,
+  allKeys,
+  defaultValue,
+  type EnvOverrides,
+  type EnvVarKey,
+  isSecret,
+  requiredWhen as requiredWhenMeta,
+  SCHEMA,
+  schemaEntry,
+} from './configSchema';
+import { node } from '#platform';
+
+export type AuthStrategy = 'NONE' | 'OAUTH';
+export type ValidationMode = 'none' | 'warn' | 'strict' | 'fanatical';
+
+export interface Warning {
+  key?: string;
+  code: WarningCode;
+  message: string;
+  details?: any; // future-proof details for machine processing
+}
+
+export enum WarningCode {
+  DEPRECATED = 'DEPRECATED',
+}
+
+export interface ConfigErrorDetail {
+  key?: string;
+  code: ConfigErrorCode;
+  message: string;
+  details?: any;
+}
+
+export enum ConfigErrorCode {
+  CONFIG_MISSING_REQUIRED = 'CONFIG_MISSING_REQUIRED',
+  CONFIG_INVALID_ENUM = 'CONFIG_INVALID_ENUM',
+  CONFIG_INVALID_BOOLEAN = 'CONFIG_INVALID_BOOLEAN',
+  CONFIG_INVALID_INTEGER = 'CONFIG_INVALID_INTEGER',
+  CONFIG_INVALID_VALIDATION_SYNTAX = 'CONFIG_INVALID_VALIDATION_SYNTAX',
+}
+
+export class CamundaConfigurationError extends Error {
+  public readonly errors: ConfigErrorDetail[];
+  constructor(errors: ConfigErrorDetail[]) {
+    const msg = errors.map((e) => `${e.code}${e.key ? `(${e.key})` : ''}: ${e.message}`).join('\n');
+    super(msg);
+    this.name = 'CamundaConfigurationError';
+    this.errors = errors;
+  }
+}
+
+// (Legacy SPEC removed; use SCHEMA in configSchema.ts)
+
+// Public type helpers for constructing flat env-style override objects
+// (Legacy flat config types removed; use EnvOverrides and EnvVarKey instead.)
+
+// Resulting strongly typed config
+export interface HubConfig {
+  /** Hub REST API base URL, normalized to end with /api/v2 (unless CAMUNDA_HUB_ADDRESS_EXACT). */
+  restAddress: string;
+  tokenAudience: string;
+  httpRetry: { maxAttempts: number; baseDelayMs: number; maxDelayMs: number }; // generic HTTP operation retry policy
+  oauth: {
+    clientId?: string;
+    clientSecret?: string;
+    oauthUrl: string;
+    grantType: string;
+    scope?: string;
+    timeoutMs: number;
+    retry: { max: number; baseDelayMs: number };
+    cacheDir?: string;
+  };
+  auth: {
+    strategy: AuthStrategy;
+  };
+  validation: {
+    req: ValidationMode;
+    res: ValidationMode;
+    raw: string; // normalized raw spec for reproducibility
+  };
+  logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+  // authVerbose removed (pre-release cleanup)
+  mtls?: {
+    cert?: string;
+    key?: string;
+    ca?: string;
+    keyPassphrase?: string;
+    certPath?: string;
+    keyPath?: string;
+    caPath?: string;
+  };
+  telemetry?: { log: boolean; correlation: boolean };
+  supportLog?: { enabled: boolean; filePath: string };
+  // Raw access (canonical uppercase enums applied) keyed by env var (internal/debug)
+  __raw: Record<string, string | undefined>;
+}
+
+export interface HydratedConfiguration {
+  config: HubConfig;
+  warnings: Warning[];
+  provided: Record<string, string>; // User provided (including explicit defaults, excluding empty strings)
+  effective: Record<string, string>; // All keys with effective values (defaults filled)
+  redacted: Record<string, string>; // Redacted effective
+  toProvidedObject(): Record<string, string>;
+  toEffectiveObject(): Record<string, string>;
+  toRedactedObject(): Record<string, string>;
+  toDisplayString(): string;
+}
+
+export interface HydrateOptions {
+  env?: Record<string, string | undefined>;
+  overrides?: EnvOverrides; // strongly typed overrides
+}
+
+// Utility: deep freeze
+function deepFreeze<T>(o: T): T {
+  if (o && typeof o === 'object' && !Object.isFrozen(o)) {
+    Object.freeze(o);
+    for (const k of Object.keys(o)) {
+      // @ts-ignore
+      deepFreeze(o[k]);
+    }
+  }
+  return o;
+}
+
+// Secrets redaction (keep length, mask all but last 4; <=4 => all masked)
+function redactSecret(v: string): string {
+  const len = v.length;
+  if (len <= 4) return '*'.repeat(len);
+  const tail = v.slice(-4);
+  return '*'.repeat(len - 4) + tail;
+}
+
+// Boolean parser
+function parseBoolean(raw: string, key: string, errors: ConfigErrorDetail[]): boolean | undefined {
+  const v = raw.trim().toLowerCase();
+  if (v === '') return undefined;
+  if (['true', 'yes', '1', 'on'].includes(v)) return true;
+  if (['false', 'no', '0', 'off'].includes(v)) return false;
+  errors.push({
+    code: ConfigErrorCode.CONFIG_INVALID_BOOLEAN,
+    key,
+    message: `Invalid boolean value '${raw}'. Expected one of true,false,yes,no,1,0,on,off.`,
+  });
+  return undefined;
+}
+
+// Integer parser
+function parseInteger(raw: string, key: string, errors: ConfigErrorDetail[]): number | undefined {
+  const v = raw.trim();
+  if (v === '') return undefined;
+  if (/^[0-9]+$/.test(v)) return parseInt(v, 10);
+  errors.push({
+    code: ConfigErrorCode.CONFIG_INVALID_INTEGER,
+    key,
+    message: `Invalid integer '${raw}'. Only unsigned base-10 integers allowed.`,
+  });
+  return undefined;
+}
+
+// Signed integer parser (allows negative values)
+function parseSignedInteger(
+  raw: string,
+  key: string,
+  errors: ConfigErrorDetail[]
+): number | undefined {
+  const v = raw.trim();
+  if (v === '') return undefined;
+  if (/^-?[0-9]+$/.test(v)) return parseInt(v, 10);
+  errors.push({
+    code: ConfigErrorCode.CONFIG_INVALID_INTEGER,
+    key,
+    message: `Invalid integer '${raw}'. Only base-10 integers (optionally negative) allowed.`,
+  });
+  return undefined;
+}
+
+// Validation mini-language parser (strict per design)
+function parseValidation(
+  raw: string,
+  errors: ConfigErrorDetail[]
+): { req: ValidationMode; res: ValidationMode; raw: string } {
+  const val = raw.trim();
+  if (val === '') return { req: 'none', res: 'none', raw: 'req:none,res:none' };
+  const lower = val.toLowerCase();
+  if (['none', 'warn', 'strict', 'fanatical'].includes(lower)) {
+    return {
+      req: lower as ValidationMode,
+      res: lower as ValidationMode,
+      raw: `req:${lower},res:${lower}`,
+    };
+  }
+  const parts = val
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const seen: Record<string, boolean> = {};
+  let req: ValidationMode = 'none';
+  let res: ValidationMode = 'none';
+  for (const part of parts) {
+    const [lhs, rhs] = part.split(':').map((s) => s?.trim().toLowerCase());
+    if (!lhs || !rhs) {
+      errors.push({
+        code: ConfigErrorCode.CONFIG_INVALID_VALIDATION_SYNTAX,
+        key: 'CAMUNDA_SDK_VALIDATION',
+        message: `Malformed segment '${part}'`,
+      });
+      continue;
+    }
+    if (lhs !== 'req' && lhs !== 'res') {
+      errors.push({
+        code: ConfigErrorCode.CONFIG_INVALID_VALIDATION_SYNTAX,
+        key: 'CAMUNDA_SDK_VALIDATION',
+        message: `Unknown scope '${lhs}'`,
+      });
+      continue;
+    }
+    if (!['none', 'warn', 'strict', 'fanatical'].includes(rhs)) {
+      errors.push({
+        code: ConfigErrorCode.CONFIG_INVALID_VALIDATION_SYNTAX,
+        key: 'CAMUNDA_SDK_VALIDATION',
+        message: `Unknown mode '${rhs}'`,
+      });
+      continue;
+    }
+    if (seen[lhs]) {
+      errors.push({
+        code: ConfigErrorCode.CONFIG_INVALID_VALIDATION_SYNTAX,
+        key: 'CAMUNDA_SDK_VALIDATION',
+        message: `Duplicate scope '${lhs}'`,
+      });
+      continue;
+    }
+    seen[lhs] = true;
+    if (lhs === 'req') req = rhs as ValidationMode;
+    else res = rhs as ValidationMode;
+  }
+  return { req, res, raw: `req:${req},res:${res}` };
+}
+
+export function hydrateConfig(options: HydrateOptions = {}): HydratedConfiguration {
+  const baseEnv =
+    options.env ||
+    (typeof process !== 'undefined' ? (process.env as Record<string, string | undefined>) : {});
+  const overrides = options.overrides || {};
+  const errors: ConfigErrorDetail[] = [];
+  const warnings: Warning[] = [];
+  const provided: Record<string, string> = {};
+  const effective: Record<string, string> = {};
+  const rawMap: Record<string, string | undefined> = {};
+  // Track provided (user intent): env or override present (non-empty string for env)
+  for (const k of allKeys()) {
+    if ((overrides as any)[k] !== undefined) {
+      provided[k] = String((overrides as any)[k]).trim();
+    } else if (baseEnv[k] !== undefined && baseEnv[k]!.trim() !== '') {
+      provided[k] = baseEnv[k]!.trim();
+    }
+  }
+  // Flag: did the user explicitly set an auth strategy (via env or overrides)?
+  const userSetStrategy =
+    provided.CAMUNDA_AUTH_STRATEGY !== undefined && provided.CAMUNDA_AUTH_STRATEGY.trim() !== '';
+
+  // Build typed-env schema with parser functions that accumulate errors instead of throwing early
+  const parseErrors: ConfigErrorDetail[] = [];
+  function boolParserFactory(key: string) {
+    return (v: string) => {
+      const parsed = parseBoolean(v, key, parseErrors);
+      if (parsed === undefined) return undefined;
+      return parsed;
+    };
+  }
+  function intParserFactory(key: string) {
+    return (v: string) => {
+      const parsed = parseInteger(v, key, parseErrors);
+      if (parsed === undefined) return undefined;
+      return parsed;
+    };
+  }
+  function signedIntParserFactory(key: string) {
+    return (v: string) => {
+      const parsed = parseSignedInteger(v, key, parseErrors);
+      if (parsed === undefined) return undefined;
+      return parsed;
+    };
+  }
+  function enumParserFactory(key: string, choices: readonly string[]) {
+    // Case-insensitive parsing. Canonicalize to schema-declared casing style.
+    // If all choices are lowercase => return lowercase value.
+    // If all choices are uppercase => return uppercase value.
+    // Mixed casing (currently unused) => return the exact schema choice matched.
+    const lowered = choices.map((c) => c.toLowerCase());
+    const allLower = choices.every((c) => c === c.toLowerCase());
+    const allUpper = choices.every((c) => c === c.toUpperCase());
+    return (v: string) => {
+      const raw = v.trim();
+      const candidateLower = raw.toLowerCase();
+      const idx = lowered.indexOf(candidateLower);
+      if (idx === -1) {
+        parseErrors.push({
+          code: ConfigErrorCode.CONFIG_INVALID_ENUM,
+          key,
+          message: `Invalid value '${v}' (expected one of ${choices.join('|')}).`,
+        });
+        return undefined;
+      }
+      if (allLower) return lowered[idx];
+      if (allUpper) return choices[idx];
+      return choices[idx];
+    };
+  }
+
+  const typedEnvSchema: Record<string, any> = {};
+  for (const k of allKeys()) {
+    const entry = schemaEntry(k);
+    const baseOpt = { optional: true };
+    if (entry.type === 'string') {
+      typedEnvSchema[k] =
+        entry.default !== undefined
+          ? { type: 'string', default: entry.default, ...baseOpt }
+          : { type: 'string', ...baseOpt };
+    } else if (entry.type === 'boolean') {
+      const base: any = { parser: boolParserFactory(k), ...baseOpt };
+      if (entry.default !== undefined) base.default = !!entry.default;
+      typedEnvSchema[k] = base;
+    } else if (entry.type === 'int') {
+      const base: any = { parser: intParserFactory(k), ...baseOpt };
+      if (entry.default !== undefined) base.default = entry.default;
+      typedEnvSchema[k] = base;
+    } else if (entry.type === 'signedInt') {
+      const base: any = { parser: signedIntParserFactory(k), ...baseOpt };
+      if (entry.default !== undefined) base.default = entry.default;
+      typedEnvSchema[k] = base;
+    } else if (entry.type === 'enum') {
+      const base: any = { parser: enumParserFactory(k, entry.choices || []), ...baseOpt };
+      if (entry.default !== undefined) base.default = entry.default;
+      typedEnvSchema[k] = base;
+    }
+  }
+
+  // Compose input env (process.env + overrides stringified) (defaults handled by typed-env schema)
+  const envInput: Record<string, string> = {};
+  for (const k of allKeys()) {
+    if ((overrides as any)[k] !== undefined) envInput[k] = String((overrides as any)[k]);
+    else if (baseEnv[k] !== undefined) envInput[k] = baseEnv[k]!;
+  }
+  // Alias handling: promote CAMUNDA_SUPPORT_LOGGER to CAMUNDA_SUPPORT_LOG_ENABLED if set
+  if (
+    envInput.CAMUNDA_SUPPORT_LOG_ENABLED === undefined &&
+    envInput.CAMUNDA_SUPPORT_LOGGER !== undefined
+  ) {
+    envInput.CAMUNDA_SUPPORT_LOG_ENABLED = envInput.CAMUNDA_SUPPORT_LOGGER;
+  }
+
+  // Aliases: accept schema-declared legacy env var names as fallbacks when the
+  // canonical key is unset.
+  for (const k of allKeys()) {
+    if (envInput[k] !== undefined) continue;
+    for (const alias of aliasesMeta(k)) {
+      const aliasVal = baseEnv[alias];
+      if (aliasVal !== undefined && aliasVal.trim() !== '') {
+        envInput[k] = aliasVal.trim();
+        break;
+      }
+    }
+  }
+
+  // Run typed-env (will not throw for our parser-based validation; parseErrors collects issues)
+  let envTyped: Record<string, any> = {};
+  envTyped = createEnv(typedEnvSchema, { env: envInput });
+
+  // Build rawMap from typed values (string representation); fill in schema defaults
+  // for unset keys. An explicitly empty / whitespace-only value is treated as unset, so
+  // defaulted keys always surface their schema default in rawMap (and therefore in
+  // `effective` / `__raw` and post-hydration inference) rather than an empty value.
+  for (const k of allKeys()) {
+    const entry = schemaEntry(k);
+    const rawProvided = envInput[k];
+    const providedIsEmpty = rawProvided !== undefined && rawProvided.trim() === '';
+    const val = envTyped[k];
+    const valIsEmptyString = typeof val === 'string' && val.trim() === '';
+    if (val !== undefined && val !== null && !valIsEmptyString) {
+      rawMap[k] = typeof val === 'string' ? val : String(val);
+    } else if (rawProvided !== undefined && !providedIsEmpty && val === undefined) {
+      // A non-empty provided value failed to parse; parseErrors already collected.
+      // Leave rawMap unset so conditional logic can still detect missing requiredWhen.
+    } else if (entry.default !== undefined) {
+      // Unset or explicitly empty: fall back to the schema default.
+      rawMap[k] = String(entry.default);
+    }
+  }
+
+  // Auth strategy inference (single post-hydration transform): if the user did not
+  // explicitly set a strategy and OAuth URL + client id + secret are all present,
+  // infer OAUTH. Consolidated here so there is exactly one place that decides the
+  // strategy (previously duplicated as a pre-typed-env pass over envInput).
+  if (
+    !userSetStrategy &&
+    rawMap.CAMUNDA_AUTH_STRATEGY === 'NONE' &&
+    rawMap.CAMUNDA_OAUTH_URL?.trim() &&
+    rawMap.CAMUNDA_CLIENT_ID?.trim() &&
+    rawMap.CAMUNDA_CLIENT_SECRET?.trim()
+  ) {
+    rawMap.CAMUNDA_AUTH_STRATEGY = 'OAUTH';
+  }
+
+  // Schema-backed accessors. `rawMap` is already fully defaulted from SCHEMA above,
+  // so these surface the effective value without re-declaring literals here — keeping
+  // configSchema.ts the single source of truth for defaults (#145).
+  const reqStr = (k: EnvVarKey): string => {
+    const v = rawMap[k];
+    // Treat an explicitly empty / whitespace-only value as unset so it falls back to
+    // the schema default (preserves the pre-refactor `|| 'default'` semantics — e.g.
+    // an empty CAMUNDA_HUB_ADDRESS must not become an empty base URL).
+    if (v !== undefined && v.trim() !== '') return v;
+    const d = defaultValue(k);
+    if (d !== undefined) return String(d);
+    if (v !== undefined) return v;
+    throw new Error(`Internal configuration error: no value or schema default for ${k}`);
+  };
+  const reqInt = (k: EnvVarKey): number => {
+    const n = parseInt(reqStr(k), 10);
+    if (Number.isNaN(n)) {
+      throw new Error(`Internal configuration error: ${k} is not a valid integer`);
+    }
+    return n;
+  };
+  const reqBool = (k: EnvVarKey): boolean => {
+    // Prefer the already-typed value from typed-env; only fall back to parsing the
+    // canonical string if a typed boolean is not available (avoids a redundant
+    // boolean -> string -> boolean round-trip).
+    const typed = envTyped[k];
+    if (typeof typed === 'boolean') return typed;
+    return reqStr(k).trim().toLowerCase() === 'true';
+  };
+
+  // Parse primitives (int, boolean, enum normalization) replicating original semantics
+  const authStrategyRaw = reqStr('CAMUNDA_AUTH_STRATEGY');
+  // The enum parser already canonicalizes to the schema casing (uppercase), so no
+  // re-normalization is needed here.
+  const authStrategy = authStrategyRaw;
+  if (!['NONE', 'OAUTH'].includes(authStrategy)) {
+    errors.push({
+      code: ConfigErrorCode.CONFIG_INVALID_ENUM,
+      key: 'CAMUNDA_AUTH_STRATEGY',
+      message: `Invalid auth strategy '${authStrategyRaw}'. Expected NONE|OAUTH.`,
+    });
+  }
+
+  // Collect conditional missing keys by strategy for merged error messages
+  const missingByCondition: Record<string, string[]> = {};
+
+  // Conditional requirement evaluation
+  for (const k of allKeys()) {
+    const req = requiredWhenMeta(k as EnvVarKey);
+    if (req) {
+      const condValue = rawMap[req.key]?.trim().toUpperCase();
+      if (condValue === req.equals) {
+        const origin = (baseEnv[k] ?? overrides[k] ?? '').toString().trim();
+        if (origin === '') {
+          const list = missingByCondition[req.equals] || (missingByCondition[req.equals] = []);
+          list.push(k);
+        }
+      }
+    }
+  }
+
+  // Merge parseErrors into main errors (after conditional pass to accumulate all)
+  for (const pe of parseErrors) errors.push(pe);
+  // Filter: eliminate any error without a key (we only care about keyed invalid values)
+  for (let i = errors.length - 1; i >= 0; i--) {
+    if (!errors[i].key) errors.splice(i, 1);
+  }
+  // Remove any spurious errors recorded without key (guard future logic)
+  // Also, do not treat missing optional keys as errors: current parseErrors only include invalid provided values.
+
+  // Aggregate missing condition keys into single error per condition (strategy)
+  for (const cond of Object.keys(missingByCondition)) {
+    const keys = Array.from(new Set(missingByCondition[cond])).sort();
+    errors.push({
+      code: ConfigErrorCode.CONFIG_MISSING_REQUIRED,
+      message: `Missing required configuration for ${cond}: ${keys.join(', ')}`,
+      details: { strategy: cond, keys },
+    });
+  }
+
+  // TLS / mTLS validation.
+  // CA-only is valid (trust a self-signed server cert without client identity).
+  // Client cert and key must come as a pair.
+  // A passphrase without a client key is invalid.
+  const mtlsCertProvided = !!(rawMap.CAMUNDA_MTLS_CERT || rawMap.CAMUNDA_MTLS_CERT_PATH);
+  const mtlsKeyProvided = !!(rawMap.CAMUNDA_MTLS_KEY || rawMap.CAMUNDA_MTLS_KEY_PATH);
+  if (mtlsCertProvided !== mtlsKeyProvided) {
+    errors.push({
+      code: ConfigErrorCode.CONFIG_MISSING_REQUIRED,
+      message:
+        'Incomplete mTLS configuration; both certificate (CAMUNDA_MTLS_CERT|_PATH) and key (CAMUNDA_MTLS_KEY|_PATH) must be provided together.',
+    });
+  }
+  if (rawMap.CAMUNDA_MTLS_KEY_PASSPHRASE && !mtlsKeyProvided) {
+    errors.push({
+      code: ConfigErrorCode.CONFIG_MISSING_REQUIRED,
+      message: 'CAMUNDA_MTLS_KEY_PASSPHRASE is set but no client key was provided.',
+    });
+  }
+
+  // Parse validation config after potential errors so we gather full set
+  const validationRaw = reqStr('CAMUNDA_SDK_VALIDATION');
+  const validation = parseValidation(validationRaw, errors);
+
+  // If any errors, throw aggregated (sorted by key then code for determinism)
+  if (errors.length) {
+    errors.sort((a, b) => (a.key || '').localeCompare(b.key || '') || a.code.localeCompare(b.code));
+    throw new CamundaConfigurationError(errors);
+  }
+
+  // Build effective map (string values) & redacted
+  for (const k of allKeys()) {
+    const val = rawMap[k];
+    if (val !== undefined) effective[k] = val;
+  }
+  // Redacted copy
+  const redacted: Record<string, string> = {};
+  for (const [k, v] of Object.entries(effective)) {
+    if (isSecret(k as EnvVarKey) && v) redacted[k] = redactSecret(v);
+    else redacted[k] = v;
+  }
+
+  // Normalize the Hub address to end with /api/v2 (idempotent), unless the user opted
+  // out via CAMUNDA_HUB_ADDRESS_EXACT — then use the address as given (for
+  // gateway/reverse-proxy deployments whose base path does not follow /api/v2).
+  const _restAddressExact = reqBool('CAMUNDA_HUB_ADDRESS_EXACT');
+  let _restAddress = reqStr('CAMUNDA_HUB_ADDRESS').trim();
+  if (_restAddressExact) {
+    // Exact mode: do not append /api/v2, but still strip trailing slashes so the join
+    // with an operation path (which begins with '/') does not produce '//'.
+    _restAddress = _restAddress.replace(/\/+$/, '');
+  } else if (!/\/api\/v2\/?$/i.test(_restAddress)) {
+    _restAddress = `${_restAddress.replace(/\/+$/, '')}/api/v2`;
+  }
+  const config: HubConfig = {
+    restAddress: _restAddress,
+    tokenAudience: reqStr('CAMUNDA_HUB_TOKEN_AUDIENCE'),
+    httpRetry: {
+      maxAttempts: reqInt('CAMUNDA_SDK_HTTP_RETRY_MAX_ATTEMPTS'),
+      baseDelayMs: reqInt('CAMUNDA_SDK_HTTP_RETRY_BASE_DELAY_MS'),
+      maxDelayMs: reqInt('CAMUNDA_SDK_HTTP_RETRY_MAX_DELAY_MS'),
+    },
+    oauth: {
+      clientId: rawMap.CAMUNDA_CLIENT_ID?.trim() || undefined,
+      clientSecret: rawMap.CAMUNDA_CLIENT_SECRET?.trim() || undefined,
+      oauthUrl: reqStr('CAMUNDA_OAUTH_URL'),
+      grantType: reqStr('CAMUNDA_OAUTH_GRANT_TYPE'),
+      scope: rawMap.CAMUNDA_OAUTH_SCOPE?.trim() || undefined,
+      timeoutMs: reqInt('CAMUNDA_OAUTH_TIMEOUT_MS'),
+      retry: {
+        max: reqInt('CAMUNDA_OAUTH_RETRY_MAX'),
+        baseDelayMs: reqInt('CAMUNDA_OAUTH_RETRY_BASE_DELAY_MS'),
+      },
+      cacheDir: rawMap.CAMUNDA_OAUTH_CACHE_DIR?.trim() || undefined,
+    },
+    auth: {
+      strategy: authStrategy as AuthStrategy,
+    },
+    validation: { req: validation.req, res: validation.res, raw: validation.raw },
+    logLevel: reqStr('CAMUNDA_SDK_LOG_LEVEL') as HubConfig['logLevel'],
+    mtls:
+      rawMap.CAMUNDA_MTLS_CERT_PATH ||
+      rawMap.CAMUNDA_MTLS_KEY_PATH ||
+      rawMap.CAMUNDA_MTLS_CA_PATH ||
+      rawMap.CAMUNDA_MTLS_CERT ||
+      rawMap.CAMUNDA_MTLS_KEY ||
+      rawMap.CAMUNDA_MTLS_CA ||
+      rawMap.CAMUNDA_MTLS_KEY_PASSPHRASE
+        ? {
+            cert: rawMap.CAMUNDA_MTLS_CERT || undefined,
+            key: rawMap.CAMUNDA_MTLS_KEY || undefined,
+            ca: rawMap.CAMUNDA_MTLS_CA || undefined,
+            keyPassphrase: rawMap.CAMUNDA_MTLS_KEY_PASSPHRASE || undefined,
+            certPath: rawMap.CAMUNDA_MTLS_CERT_PATH || undefined,
+            keyPath: rawMap.CAMUNDA_MTLS_KEY_PATH || undefined,
+            caPath: rawMap.CAMUNDA_MTLS_CA_PATH || undefined,
+          }
+        : undefined,
+    telemetry: {
+      log: reqBool('CAMUNDA_SDK_TELEMETRY_LOG'),
+      correlation: reqBool('CAMUNDA_SDK_TELEMETRY_CORRELATION'),
+    },
+    supportLog: {
+      enabled: reqBool('CAMUNDA_SUPPORT_LOG_ENABLED'),
+      filePath:
+        rawMap.CAMUNDA_SUPPORT_LOG_FILE_PATH ||
+        (node && typeof process !== 'undefined' && typeof process.cwd === 'function'
+          ? node.path.join(process.cwd(), 'camunda-support.log')
+          : 'camunda-support.log'),
+    },
+    __raw: { ...rawMap },
+  };
+
+  deepFreeze(config);
+
+  const api: HydratedConfiguration = {
+    config,
+    warnings,
+    provided: Object.keys(provided)
+      .sort()
+      .reduce<Record<string, string>>((acc, k) => {
+        acc[k] = provided[k];
+        return acc;
+      }, {}),
+    effective: Object.keys(effective)
+      .sort()
+      .reduce<Record<string, string>>((acc, k) => {
+        acc[k] = effective[k];
+        return acc;
+      }, {}),
+    redacted: Object.keys(redacted)
+      .sort()
+      .reduce<Record<string, string>>((acc, k) => {
+        acc[k] = redacted[k];
+        return acc;
+      }, {}),
+    toProvidedObject() {
+      return { ...this.provided };
+    },
+    toEffectiveObject() {
+      return { ...this.effective };
+    },
+    toRedactedObject() {
+      return { ...this.redacted };
+    },
+    toDisplayString() {
+      return Object.entries(this.redacted)
+        .map(([k, v]) => `${k}=${v}`)
+        .join('\n');
+    },
+  };
+  // Record last hydrated configuration for runtime consumers (e.g., validation gating) that
+  // call convenience helpers without explicit DI. This preserves test semantics where
+  // hydrateConfig({ env: { ... } }) is invoked directly without also calling a higher-level
+  // apply function. (Greenfield simplification: single source of truth here.)
+  try {
+    (globalThis as any).__CAMUNDA_SDK_LAST_CONFIG = api;
+  } catch {
+    /* ignore (SSR edge) */
+  }
+  return api;
+}
+
+// Async variant scaffolding (supports fetch + timeout + window global). Implementation minimal until browser integration.
+export interface HydrateAsyncOptions extends HydrateOptions {
+  fetch?: () => Promise<Record<string, string | undefined>>;
+  timeoutMs?: number;
+}
+export async function hydrateConfigAsync(
+  options: HydrateAsyncOptions = {}
+): Promise<HydratedConfiguration> {
+  const { fetch, timeoutMs } = options;
+  let fetched: Record<string, string | undefined> = {};
+  if (fetch) {
+    fetched = await (timeoutMs ? withTimeout(fetch(), timeoutMs) : fetch());
+  } else if (typeof window !== 'undefined' && (window as any).CAMUNDA_CONFIG) {
+    fetched = (window as any).CAMUNDA_CONFIG;
+  }
+  return hydrateConfig({
+    env: { ...(options.env || {}), ...fetched },
+    overrides: options.overrides,
+  });
+}
+
+async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  // A liveness bound: real time even under a pinned clock, but routed through the one
+  // module allowed to own timers so the budget is released however the race settles.
+  const budget = liveClock.deadline(ms);
+  try {
+    return await Promise.race([
+      p,
+      new Promise<T>((_, rej) => {
+        const fail = () =>
+          rej(
+            new CamundaConfigurationError([
+              {
+                code: ConfigErrorCode.CONFIG_INVALID_ENUM,
+                message: `Configuration fetch timed out after ${ms}ms`,
+              },
+            ])
+          );
+        if (budget.signal.aborted) fail();
+        else budget.signal.addEventListener('abort', fail, { once: true });
+      }),
+    ]);
+  } finally {
+    // Covers all three outcomes: fetch resolved, fetch rejected, or the deadline won.
+    // `dispose` is `clearTimeout`, so calling it after the timer fired is a no-op.
+    budget.dispose();
+  }
+}
+
+// Export spec for TypeDoc extraction tooling
+// Export projection of schema entries for docs generation
+export function configurationSpec() {
+  return SCHEMA;
+}
+
+/**
+ * Non-mutating accessor for the most recently hydrated configuration.
+ * Returns the same HydratedConfiguration object that the last call to
+ * hydrateConfig / hydrateConfigAsync produced, or undefined if hydration
+ * has not occurred yet in this process. This function NEVER performs
+ * hydration itself (no environment reads / parsing side-effects).
+ */
+export function getConfig(): HydratedConfiguration | undefined {
+  try {
+    return (globalThis as any).__CAMUNDA_SDK_LAST_CONFIG as HydratedConfiguration | undefined;
+  } catch {
+    return undefined;
+  }
+}

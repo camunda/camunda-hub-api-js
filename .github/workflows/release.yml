@@ -1,0 +1,275 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - 'stable/**'
+  workflow_dispatch:
+
+concurrency:
+  group: camunda-hub-api-js-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # required for pushing version bump commit, tags, CHANGELOG
+  packages: write   # required for npm publish via semantic-release
+  pull-requests: write
+  issues: write
+  id-token: write # Required for OIDC
+
+jobs:
+  # Unlike the Orchestration Cluster SDK, generation never re-bundles the spec at release
+  # time: it reads the vendored bundle in external-spec/bundled/, and the blocking
+  # `generation-drift` CI job guarantees the committed src/gen matches it. Spec updates
+  # arrive as reviewed PRs from spec-sync.yml. So this job only verifies the build.
+  verify:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Generate & Build (includes unit tests)
+        run: npm run build
+
+      - name: Fail if the build changed committed files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo '::error::npm run build changed committed files; regenerate and commit on a PR.'
+            git status --porcelain
+            exit 1
+          fi
+
+      - name: Smoke GitHub OIDC token exchange for npm publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A read that dies mid-response (curl 56) is the registry having a bad
+          # moment, not the credentials being wrong, so it must not fail a release.
+          RETRY="--retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 10 --max-time 60"
+          REG=$(npm -s config get registry||:); REG=${REG%/}; : "${REG:=https://registry.npmjs.org}"
+          HOST=${REG#*://}; HOST=${HOST%%/*}
+          # shellcheck disable=SC2086  # $RETRY is a deliberately word-split flag list
+          ID=$(curl -fsS $RETRY -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm:${HOST}" | jq -er .value)
+          PKG=$(jq -r '.name|@uri' package.json)
+          # shellcheck disable=SC2086  # $RETRY is a deliberately word-split flag list
+          RESP=$(curl -fsS $RETRY -H "Authorization: Bearer $ID" "$REG/-/npm/v1/oidc/token/exchange/package/$PKG" -d "")
+          TOKEN=$(echo "$RESP" | jq -er '.token')
+          echo "::add-mask::$TOKEN"
+          [ -n "$TOKEN" ]
+
+  publish:
+    name: Version & Publish (${{ github.ref_name }})
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      # The release pushes directly to a ruleset-protected branch. GITHUB_TOKEN can never
+      # bypass a ruleset (the GitHub Actions app is not an eligible bypass actor), so the
+      # push is made as camunda-sdk-automation, which is registered as one.
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/agentic-experience/github.com/apps/camunda/camunda-sdk-automation GITHUB_APP_ID | APP_ID ;
+            secret/data/products/agentic-experience/github.com/apps/camunda/camunda-sdk-automation GITHUB_APP_PRIVATE_KEY | APP_PRIVATE_KEY ;
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ steps.secrets.outputs.APP_ID }}
+          private-key: ${{ steps.secrets.outputs.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Fetch remote refs for semantic-release
+        run: |
+          set -euo pipefail
+          # semantic-release validates that configured release branches exist on the remote.
+          # actions/checkout may only fetch the triggering ref, so fetch all heads explicitly.
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+          # semantic-release stores channel information in git notes.
+          git fetch origin '+refs/notes/*:refs/notes/*' || true
+
+      - name: Export stable line config
+        run: |
+          echo "CAMUNDA_SDK_CURRENT_STABLE_MAJOR=${{ vars['CAMUNDA_SDK_CURRENT_STABLE_MAJOR'] }}" >> $GITHUB_ENV
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps
+        run: npm ci --ignore-scripts
+
+      - name: Determine next version (dry-run)
+        id: next_version
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -e
+          node scripts/next-version.mjs > next-version.out 2>&1 || {
+            echo 'Semantic-release dry-run failed:'
+            cat next-version.out
+            exit 1
+          }
+          echo "semantic-release summary:";
+          grep -E '^(release_branch|release_channel|next_version)=' next-version.out || true
+          VER=$(grep -E '^next_version=' next-version.out | tail -n 1 | cut -d '=' -f2)
+          if [ -z "$VER" ]; then
+            echo "No release required"
+            echo "publish_needed=false" >> $GITHUB_OUTPUT
+            echo "version=" >> $GITHUB_OUTPUT
+          else
+            echo "Next version: $VER"
+            echo "publish_needed=true" >> $GITHUB_OUTPUT
+            echo "version=$VER" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump version & regenerate artifacts
+        if: steps.next_version.outputs.publish_needed == 'true'
+        run: |
+          npm version ${{ steps.next_version.outputs.version }} --no-git-tag-version
+          npm run build
+
+      - name: Smoke tests (post-bump)
+        if: steps.next_version.outputs.publish_needed == 'true'
+        run: npm test -- --run
+
+      - name: Prepare GitHub release assets
+        if: steps.next_version.outputs.publish_needed == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          VER="${{ steps.next_version.outputs.version }}"
+          OUT="release-assets/hub-api-${VER}-sources.tgz"
+          # Include the generated SDK sources and version markers as a single asset.
+          tar -czf "$OUT" package.json src/runtime/version.ts src/gen dist
+          echo "Prepared $OUT"
+
+      - name: Commit version bump & regenerated artifacts
+        if: steps.next_version.outputs.publish_needed == 'true'
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
+          git add -A
+          # [skip ci] is required: unlike GITHUB_TOKEN, a GitHub App token re-triggers
+          # workflows, so without it this push would start another release run.
+          git commit -m "chore(release): v${{ steps.next_version.outputs.version }} [skip ci]"
+          git push origin "HEAD:${{ github.ref_name }}"
+
+      - name: Publish (semantic-release)
+        if: steps.next_version.outputs.publish_needed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          NPM_CONFIG_PROVENANCE: true
+        run: NODE_AUTH_TOKEN="" npx semantic-release
+
+      - name: Upload release analysis logs (always)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-analysis
+          path: |
+            next-version.out
+
+    outputs:
+      published_version: ${{ steps.next_version.outputs.version }}
+      publish_needed: ${{ steps.next_version.outputs.publish_needed }}
+
+  post-release-smoke:
+    name: Post-release smoke test
+    needs: publish
+    if: needs.publish.outputs.publish_needed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+
+      - name: Wait for published version to propagate
+        run: |
+          set -euo pipefail
+          PKG="@camunda8/hub-api"
+          VER="${{ needs.publish.outputs.published_version }}"
+          if [ -z "${VER}" ]; then
+            echo "::error::published_version is empty; refusing to poll the registry for an unspecified version"
+            exit 1
+          fi
+          echo "Waiting for ${PKG}@${VER} to become resolvable on the registry"
+          # npm publish returns before the new version is readable from all
+          # registry replicas/CDN edges, so a naive install can hit ETARGET.
+          attempts=30
+          delay=10
+          for i in $(seq 1 "$attempts"); do
+            if err=$(npm view --prefer-online "${PKG}@${VER}" version 2>&1 >/dev/null); then
+              echo "Resolved ${PKG}@${VER} after attempt ${i}"
+              exit 0
+            fi
+            if ! printf '%s' "$err" | grep -qiE 'ETARGET|E404|No matching version|is not in this registry'; then
+              echo "::error::Unexpected npm error while checking ${PKG}@${VER}; failing fast:"
+              printf '%s\n' "$err"
+              exit 1
+            fi
+            echo "Attempt ${i}/${attempts}: ${VER} not visible yet; retrying in ${delay}s"
+            sleep "$delay"
+          done
+          echo "::error::${PKG}@${VER} did not become resolvable within $((attempts * delay))s"
+          exit 1
+
+      - name: Install and import the published package (ESM + CJS)
+        run: |
+          set -euo pipefail
+          VER="${{ needs.publish.outputs.published_version }}"
+          mkdir smoke && cd smoke
+          npm init -y >/dev/null
+          npm install "@camunda8/hub-api@${VER}"
+          node --input-type=module -e "
+            import { createHubClient, ProjectKey } from '@camunda8/hub-api';
+            const c = createHubClient({ config: { CAMUNDA_HUB_ADDRESS: 'http://localhost:8088' } });
+            if (typeof c.getInfo !== 'function' || typeof ProjectKey.assumeExists !== 'function') process.exit(1);
+            console.log('ESM OK');"
+          node -e "
+            const { createHubClient } = require('@camunda8/hub-api');
+            if (typeof createHubClient({ config: { CAMUNDA_HUB_ADDRESS: 'http://localhost:8088' } }).getInfo !== 'function') process.exit(1);
+            console.log('CJS OK');"
+
+  notify-release-failure:
+    needs: [verify, publish, post-release-smoke]
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    permissions: {}
+    uses: camunda/sdk-infra/.github/workflows/sdk-slack-notify.yml@v1
+    with:
+      repo-name: camunda-hub-api-js
+      workflow-name: Release
+      mention-group: ${{ vars.SLACK_MENTION_GROUP }}
+    secrets:
+      slack-webhook-url: ${{ secrets.SLACK_SDK_ALERTS }}

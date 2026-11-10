@@ -1,0 +1,481 @@
+{
+  "schemaVersion": "2.0.0",
+  "specHash": "sha256:16b66ff027cc95113a885d11596ecac0aacfe6d82ad3fc3a768bda5f701c9680",
+  "generator": {
+    "name": "@hey-api/openapi-ts"
+  },
+  "brandingConfig": {
+    "genericTypeName": "CamundaKey",
+    "idTypesIncluded": true,
+    "namespaceFactories": true
+  },
+  "keys": [
+    {
+      "name": "CatalogAssetKey",
+      "semanticType": "CatalogAssetKey",
+      "category": "other",
+      "description": "System-generated key for a catalog asset.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "CatalogAssetKey"
+      },
+      "examples": [
+        "1e8f0c3a-5b6d-4f2e-9c1a-2d3e4f5a6b7c"
+      ],
+      "extensions": {
+        "x-semantic-type": "CatalogAssetKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "catalog-asset-key",
+      "brand": {
+        "tsType": "CamundaKey<'CatalogAssetKey'>"
+      },
+      "zod": {
+        "schemaName": "zCatalogAssetKey",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/CatalogAssetKey"
+      }
+    },
+    {
+      "name": "FileKey",
+      "semanticType": "FileKey",
+      "category": "other",
+      "description": "System-generated key for a file.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "FileKey"
+      },
+      "examples": [
+        "1eadb755-662f-43bd-81d1-cf36f39a0a03"
+      ],
+      "extensions": {
+        "x-semantic-type": "FileKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "file-key",
+      "brand": {
+        "tsType": "CamundaKey<'FileKey'>"
+      },
+      "zod": {
+        "schemaName": "zFileKey",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/FileKey"
+      }
+    },
+    {
+      "name": "FolderKey",
+      "semanticType": "FolderKey",
+      "category": "other",
+      "description": "System-generated key for a folder.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "FolderKey"
+      },
+      "examples": [
+        "3e98d77b-799b-4f31-bfc4-4c5829fc7dee"
+      ],
+      "extensions": {
+        "x-semantic-type": "FolderKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "folder-key",
+      "brand": {
+        "tsType": "CamundaKey<'FolderKey'>"
+      },
+      "zod": {
+        "schemaName": "zFolderKey",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/FolderKey"
+      }
+    },
+    {
+      "name": "MemberEmail",
+      "semanticType": "MemberEmail",
+      "category": "other",
+      "description": "The email address identifying a member.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "email"
+      },
+      "examples": [
+        "alice@example.com"
+      ],
+      "extensions": {
+        "x-semantic-type": "MemberEmail"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "member-email",
+      "brand": {
+        "tsType": "CamundaKey<'MemberEmail'>"
+      },
+      "zod": {
+        "schemaName": "zMemberEmail",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/MemberEmail"
+      }
+    },
+    {
+      "name": "ProjectKey",
+      "semanticType": "ProjectKey",
+      "category": "other",
+      "description": "System-generated key for a project.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "ProjectKey"
+      },
+      "examples": [
+        "28b47b0a-364c-4dbe-9836-41ab371c15b2"
+      ],
+      "extensions": {
+        "x-semantic-type": "ProjectKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "project-key",
+      "brand": {
+        "tsType": "CamundaKey<'ProjectKey'>"
+      },
+      "zod": {
+        "schemaName": "zProjectKey",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/ProjectKey"
+      }
+    },
+    {
+      "name": "ProjectSnapshotKey",
+      "semanticType": "ProjectSnapshotKey",
+      "category": "other",
+      "description": "System-generated key for a project snapshot.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "ProjectSnapshotKey"
+      },
+      "examples": [
+        "9c2f1b44-1f0e-4a9b-86bb-0d0a4a2c1f77"
+      ],
+      "extensions": {
+        "x-semantic-type": "ProjectSnapshotKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "project-snapshot-key",
+      "brand": {
+        "tsType": "CamundaKey<'ProjectSnapshotKey'>"
+      },
+      "zod": {
+        "schemaName": "zProjectSnapshotKey",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/ProjectSnapshotKey"
+      }
+    },
+    {
+      "name": "VersionKey",
+      "semanticType": "VersionKey",
+      "category": "other",
+      "description": "System-generated key for a version.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "VersionKey"
+      },
+      "examples": [
+        "4afc38ec-ee23-49bb-9a36-92cdba3e75e7"
+      ],
+      "extensions": {
+        "x-semantic-type": "VersionKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "version-key",
+      "brand": {
+        "tsType": "CamundaKey<'VersionKey'>"
+      },
+      "zod": {
+        "schemaName": "zVersionKey",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/VersionKey"
+      }
+    },
+    {
+      "name": "WorkspaceKey",
+      "semanticType": "WorkspaceKey",
+      "category": "other",
+      "description": "System-generated key for a workspace.",
+      "composition": {
+        "schemaKind": "inline",
+        "refs": [],
+        "inlineFragments": 0
+      },
+      "constraints": {
+        "format": "WorkspaceKey"
+      },
+      "examples": [
+        "0108f0ef-5c76-4a75-a602-45a9f04554fd"
+      ],
+      "extensions": {
+        "x-semantic-type": "WorkspaceKey"
+      },
+      "flags": {
+        "semanticKey": true,
+        "includesLongKeyRef": false,
+        "deprecated": false
+      },
+      "stableId": "workspace-key",
+      "brand": {
+        "tsType": "CamundaKey<'WorkspaceKey'>"
+      },
+      "zod": {
+        "schemaName": "zWorkspaceKey",
+        "transformPipeline": [
+          "brand-cast"
+        ]
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/WorkspaceKey"
+      }
+    }
+  ],
+  "unions": [
+    {
+      "name": "BasicStringFilterProperty",
+      "kind": "hybrid-union",
+      "description": "String property with basic advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "branded-ref",
+          "ref": "BasicStringFilter"
+        }
+      ],
+      "stableId": "basic-string-filter-property",
+      "tsType": "string | BasicStringFilter",
+      "zod": {
+        "schemaName": "zBasicStringFilterProperty"
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/BasicStringFilterProperty"
+      }
+    },
+    {
+      "name": "DateTimeFilterProperty",
+      "kind": "hybrid-union",
+      "description": "Date-time property with full advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "branded-ref",
+          "ref": "AdvancedDateTimeFilter"
+        }
+      ],
+      "stableId": "date-time-filter-property",
+      "tsType": "string | AdvancedDateTimeFilter",
+      "zod": {
+        "schemaName": "zDateTimeFilterProperty"
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/DateTimeFilterProperty"
+      }
+    },
+    {
+      "name": "IntegerFilterProperty",
+      "kind": "hybrid-union",
+      "description": "Integer property with advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "branded-ref",
+          "ref": "AdvancedIntegerFilter"
+        }
+      ],
+      "stableId": "integer-filter-property",
+      "tsType": "string | AdvancedIntegerFilter",
+      "zod": {
+        "schemaName": "zIntegerFilterProperty"
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/IntegerFilterProperty"
+      }
+    },
+    {
+      "name": "LongFilterProperty",
+      "kind": "hybrid-union",
+      "description": "Long property with advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "branded-ref",
+          "ref": "AdvancedLongFilter"
+        }
+      ],
+      "stableId": "long-filter-property",
+      "tsType": "string | AdvancedLongFilter",
+      "zod": {
+        "schemaName": "zLongFilterProperty"
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/LongFilterProperty"
+      }
+    },
+    {
+      "name": "SearchQueryPage",
+      "kind": "union-wrapper",
+      "branches": [
+        {
+          "branchType": "branded-ref",
+          "ref": "LimitPagination"
+        },
+        {
+          "branchType": "branded-ref",
+          "ref": "OffsetPagination"
+        }
+      ],
+      "stableId": "search-query-page",
+      "tsType": "LimitPagination | OffsetPagination",
+      "zod": {
+        "schemaName": "zSearchQueryPage"
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/SearchQueryPage"
+      }
+    },
+    {
+      "name": "SearchQueryPageRequest",
+      "kind": "union-wrapper",
+      "description": "Pagination criteria. Uses offset-based pagination (from/limit).\n",
+      "branches": [
+        {
+          "branchType": "branded-ref",
+          "ref": "LimitPagination"
+        },
+        {
+          "branchType": "branded-ref",
+          "ref": "OffsetPagination"
+        }
+      ],
+      "stableId": "search-query-page-request",
+      "tsType": "LimitPagination | OffsetPagination",
+      "zod": {
+        "schemaName": "zSearchQueryPageRequest"
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/SearchQueryPageRequest"
+      }
+    },
+    {
+      "name": "StringFilterProperty",
+      "kind": "hybrid-union",
+      "description": "String property with full advanced search capabilities.",
+      "branches": [
+        {
+          "branchType": "other"
+        },
+        {
+          "branchType": "branded-ref",
+          "ref": "AdvancedStringFilter"
+        }
+      ],
+      "stableId": "string-filter-property",
+      "tsType": "string | AdvancedStringFilter",
+      "zod": {
+        "schemaName": "zStringFilterProperty"
+      },
+      "source": {
+        "schemaPointer": "#/components/schemas/StringFilterProperty"
+      }
+    }
+  ],
+  "arrays": [],
+  "integrity": {
+    "totalPrimaryKeys": 8,
+    "totalUnionWrappers": 7,
+    "implicitCamundaKeys": []
+  }
+}

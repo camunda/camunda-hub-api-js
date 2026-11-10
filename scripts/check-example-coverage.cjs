@@ -1,0 +1,183 @@
+#!/usr/bin/env node
+
+/**
+ * Check example coverage: compare operationIds in the bundled OpenAPI spec
+ * against entries in examples/operation-map.json.
+ *
+ * Exits with code 1 if any operations are missing examples.
+ * Writes missing-examples.json for CI consumption.
+ */
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const rootDir = path.join(__dirname, '..');
+const specPath = path.join(rootDir, 'external-spec', 'bundled', 'rest-api.bundle.json');
+const mapPath = path.join(rootDir, 'examples', 'operation-map.json');
+
+if (!fs.existsSync(specPath)) {
+  console.error(`Spec not found at ${specPath}`);
+  console.error("Run 'npm run bundle:spec' first to fetch the spec.");
+  process.exit(2);
+}
+
+const spec = JSON.parse(fs.readFileSync(specPath, 'utf8'));
+
+if (!fs.existsSync(mapPath)) {
+  console.error(`Operation map not found at ${mapPath}`);
+  console.error('Ensure examples/operation-map.json exists and is committed.');
+  process.exit(2);
+}
+
+const operationMap = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+
+const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']);
+
+const specOps = [];
+for (const [pathStr, pathItem] of Object.entries(spec.paths || {})) {
+  for (const [method, operation] of Object.entries(pathItem)) {
+    if (HTTP_METHODS.has(method) && operation.operationId) {
+      specOps.push({
+        operationId: operation.operationId,
+        method: method.toUpperCase(),
+        path: pathStr,
+        summary: operation.summary || '',
+      });
+    }
+  }
+}
+
+const mapKeys = new Set(Object.keys(operationMap));
+const covered = specOps.filter((op) => mapKeys.has(op.operationId));
+const missing = specOps.filter((op) => !mapKeys.has(op.operationId));
+
+console.log(`Spec operations: ${specOps.length}`);
+console.log(`Covered:         ${covered.length}`);
+console.log(`Missing:         ${missing.length}`);
+console.log(`Coverage:        ${Math.round((covered.length / specOps.length) * 100)}%`);
+
+if (missing.length > 0) {
+  missing.sort((a, b) => a.operationId.localeCompare(b.operationId));
+  console.log(`\nMissing operations:`);
+  for (const op of missing) {
+    console.log(`  - ${op.operationId} (${op.method} ${op.path})`);
+  }
+
+  console.log(`\nTo fix this:`);
+  console.log(`  1. Add an example for each missing operation in examples/,`);
+  console.log(
+    `     wrapping the code in //#region <RegionName> ... //#endregion <RegionName> tags`
+  );
+  console.log(`     (pick a RegionName, typically PascalCase, e.g. CreateUser).`);
+  console.log(`  2. Add or update an entry in examples/operation-map.json mapping the operationId`);
+  console.log(`     to the chosen RegionName.`);
+  console.log(`  3. Or use the Copilot prompt: .github/prompts/add-missing-examples.prompt.md`);
+
+  fs.writeFileSync(path.join(rootDir, 'missing-examples.json'), JSON.stringify(missing, null, 2));
+  process.exit(1);
+} else {
+  console.log('\nFull coverage!');
+  const missingPath = path.join(rootDir, 'missing-examples.json');
+  if (fs.existsSync(missingPath)) {
+    fs.unlinkSync(missingPath);
+  }
+}
+
+// --- Integrity check: every operation-map entry must resolve ---
+
+const REGION_PATTERNS = [
+  { start: /^\s*\/\/#region\s+(.+?)\s*$/, end: /^\s*\/\/#endregion(?:\s+(.+?))?\s*$/ },
+  { start: /^\s*#region\s+(.+?)\s*$/, end: /^\s*#endregion(?:\s+(.+?))?\s*$/ },
+  { start: /^\s*\/\/\s*<([A-Za-z]\w*)>\s*$/, end: /^\s*\/\/\s*<\/([A-Za-z]\w*)>\s*$/ },
+  { start: /^\s*#\s*region\s+(.+?)\s*$/, end: /^\s*#\s*endregion(?:\s+(.+?))?\s*$/ },
+];
+
+function extractRegions(content) {
+  const regions = new Set();
+  const stack = [];
+
+  for (const line of content.split(/\r?\n/)) {
+    let matched = false;
+
+    for (let i = 0; i < REGION_PATTERNS.length; i++) {
+      const pattern = REGION_PATTERNS[i];
+      const startMatch = line.match(pattern.start);
+      if (startMatch) {
+        stack.push({ patternIndex: i, name: startMatch[1].trim() });
+        matched = true;
+        break;
+      }
+    }
+
+    if (matched) {
+      continue;
+    }
+
+    for (let i = 0; i < REGION_PATTERNS.length; i++) {
+      const pattern = REGION_PATTERNS[i];
+      const endMatch = line.match(pattern.end);
+      if (!endMatch) {
+        continue;
+      }
+
+      const current = stack[stack.length - 1];
+      if (!current || current.patternIndex !== i) {
+        break;
+      }
+
+      const closeName = endMatch[1] ? endMatch[1].trim() : null;
+      if (closeName && closeName !== current.name) {
+        break;
+      }
+
+      stack.pop();
+      regions.add(current.name);
+      break;
+    }
+  }
+  return regions;
+}
+
+const examplesDir = path.join(rootDir, 'examples');
+const integrityErrors = [];
+const fileRegionCache = new Map();
+
+for (const [opId, entries] of Object.entries(operationMap)) {
+  if (!Array.isArray(entries)) {
+    integrityErrors.push(`${opId}: value is not an array`);
+    continue;
+  }
+  for (const entry of entries) {
+    if (!entry.file || typeof entry.file !== 'string') {
+      integrityErrors.push(`${opId}: entry missing "file" field`);
+      continue;
+    }
+    if (!entry.region || typeof entry.region !== 'string') {
+      integrityErrors.push(`${opId}: entry missing "region" field`);
+      continue;
+    }
+    const filePath = path.resolve(examplesDir, entry.file);
+    if (!fs.existsSync(filePath)) {
+      integrityErrors.push(`${opId}: file not found: ${entry.file}`);
+      continue;
+    }
+    let regions = fileRegionCache.get(filePath);
+    if (!regions) {
+      regions = extractRegions(fs.readFileSync(filePath, 'utf8'));
+      fileRegionCache.set(filePath, regions);
+    }
+    if (!regions.has(entry.region)) {
+      integrityErrors.push(`${opId}: region "${entry.region}" not found in ${entry.file}`);
+    }
+  }
+}
+
+if (integrityErrors.length > 0) {
+  console.error(`\nIntegrity errors (${integrityErrors.length}):`);
+  for (const err of integrityErrors) {
+    console.error(`  - ${err}`);
+  }
+  process.exit(1);
+} else {
+  console.log('Integrity check passed: all files and regions resolve.');
+}
