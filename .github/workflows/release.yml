@@ -193,6 +193,17 @@ jobs:
           NPM_CONFIG_PROVENANCE: true
         run: NODE_AUTH_TOKEN="" npx semantic-release
 
+      - name: Build API docs
+        if: github.ref_name == 'main'
+        run: npm run docs:api
+
+      - name: Deploy API docs (gh-pages)
+        if: github.ref_name == 'main'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs
+          branch: gh-pages
+
       - name: Upload release analysis logs (always)
         if: always()
         uses: actions/upload-artifact@v7

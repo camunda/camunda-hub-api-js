@@ -133,7 +133,7 @@ const snapshot = await hub.createProjectSnapshot({
 console.log(file.fileKey, snapshot.projectSnapshotKey);
 ```
 
-Each method's JSDoc carries a compilable example (from [examples/](examples/)), so your editor shows usage on hover.
+Each method's JSDoc carries a compilable example (from the [examples](https://github.com/camunda/camunda-hub-api-js/tree/main/examples)), so your editor shows usage on hover.
 
 ### Branded Keys
 
@@ -380,7 +380,7 @@ const hub = createHubClient({
 
 ## API Specification
 
-The client is generated from the Camunda Hub Public API OpenAPI specification. A bundled copy is vendored in [external-spec/bundled/](external-spec/bundled/); [spec-metadata.json](external-spec/bundled/spec-metadata.json) records the source commit. `SPEC_HASH` (exported from the package) identifies the spec a build was generated from.
+The client is generated from the Camunda Hub Public API OpenAPI specification. A bundled copy is vendored in [external-spec/bundled/rest-api.bundle.json](external-spec/bundled/rest-api.bundle.json); [spec-metadata.json](external-spec/bundled/spec-metadata.json) records the source commit. `SPEC_HASH` (exported from the package) identifies the spec a build was generated from.
 
 ## Contributing
 

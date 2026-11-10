@@ -1,0 +1,273 @@
+#!/usr/bin/env node
+/**
+ * Post-process typedoc-plugin-markdown output for Docusaurus compatibility.
+ *
+ * - Adds Docusaurus YAML frontmatter (id, title, sidebar_label)
+ * - Escapes bare JSX-like syntax outside code blocks (if any)
+ * - Creates _category_.json files for Docusaurus sidebar ordering
+ *
+ * Usage: node scripts/postprocess-md-docs.mjs [docs-md]
+ */
+
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const docsDir = process.argv[2] || 'docs-md';
+
+if (!existsSync(docsDir)) {
+  console.error(`Directory not found: ${docsDir}`);
+  process.exit(1);
+}
+
+/** Convert a filename stem to a human-readable title. */
+function stemToTitle(stem) {
+  // CamelCase → spaced: "HubClient" stays as-is
+  // kebab-case → Title Case: "type-aliases" → "Type Aliases"
+  if (stem.includes('-')) {
+    return stem
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+  return stem;
+}
+
+/** Category labels for known directories. */
+const CATEGORY_LABELS = {
+  classes: 'Classes',
+  interfaces: 'Interfaces',
+  'type-aliases': 'Type Aliases',
+  functions: 'Functions',
+  namespaces: 'Namespaces',
+  index: 'Core',
+  fn: 'Per-Operation Functions',
+  logger: 'Logger',
+};
+
+/** Sidebar positions for top-level module directories. */
+const CATEGORY_POSITIONS = {
+  index: 1,
+  logger: 2,
+  fn: 3,
+};
+
+/** Module-level entry page overrides. */
+const MODULE_TITLES = {
+  index: 'Hub TypeScript SDK API Reference',
+};
+
+/** Sidebar positions for top-level docs (files at the root of api-reference/). */
+const DOC_POSITIONS = {
+  index: 0,
+  modules: 99,
+};
+
+/**
+ * Add Docusaurus frontmatter to a markdown file.
+ * Skips if frontmatter already exists.
+ */
+function addFrontmatter(filePath) {
+  let content = readFileSync(filePath, 'utf-8');
+
+  // Already has frontmatter
+  if (content.startsWith('---\n')) return;
+
+  const stem = basename(filePath, '.md');
+  const dir = basename(dirname(filePath));
+
+  // Derive title from first H1, or filename
+  const h1Match = content.match(/^#\s+(.+)$/m);
+  let title = h1Match ? h1Match[1].replace(/[`*]/g, '') : stemToTitle(stem);
+
+  // Override known module entry pages
+  if (stem === 'index' && dir === basename(docsDir)) {
+    title = MODULE_TITLES.index || title;
+  }
+
+  // Strip MDX backslash escapes (e.g. \< \>) — they are invalid inside
+  // double-quoted YAML strings and unnecessary in frontmatter values.
+  const yamlTitle = title.replace(/\\([<>])/g, '$1');
+  const sidebarLabel = stem === 'index' ? 'Overview' : yamlTitle.split(':').pop().trim();
+
+  // Add sidebar_position for top-level docs
+  const isTopLevel = dir === basename(docsDir);
+  const positionLine =
+    isTopLevel && stem in DOC_POSITIONS ? `sidebar_position: ${DOC_POSITIONS[stem]}\n` : '';
+
+  const frontmatter = `---
+title: "${yamlTitle}"
+sidebar_label: "${sidebarLabel}"
+${positionLine}mdx:
+  format: md
+---
+
+`;
+  content = frontmatter + content;
+  writeFileSync(filePath, content, 'utf-8');
+}
+
+/**
+ * Clean up HTML blocks in generated markdown for readability.
+ *
+ * With `mdx: { format: md }` in frontmatter, Docusaurus parses these files
+ * as CommonMark, so angle brackets and curly braces are safe. We still
+ * convert styled HTML (from OpenAPI descriptions) to markdown for cleaner output.
+ */
+function cleanHtml(filePath) {
+  const content = readFileSync(filePath, 'utf-8');
+
+  // Separate frontmatter from body
+  let frontmatter = '';
+  let body = content;
+  const fmMatch = content.match(/^(---\n[\s\S]*?\n---\n)/);
+  if (fmMatch) {
+    frontmatter = fmMatch[1];
+    body = content.slice(frontmatter.length);
+  }
+
+  // Split on fenced code blocks — only transform prose regions
+  const codeBlockParts = body.split(/(```[\s\S]*?```)/);
+  let changed = false;
+
+  for (let i = 0; i < codeBlockParts.length; i++) {
+    if (codeBlockParts[i].startsWith('```')) continue;
+
+    const before = codeBlockParts[i];
+
+    // Convert styled HTML to markdown (these come from OpenAPI descriptions).
+    codeBlockParts[i] = codeBlockParts[i]
+      .replace(/<em>([^<]*)<\/em>/g, '*$1*')
+      .replace(/<strong>([^<]*)<\/strong>/g, '**$1**')
+      .replace(/<code>([^<]*)<\/code>/g, '`$1`')
+      .replace(/<br\s*\/?>/g, '\n')
+      .replace(/<p>([^<]*)<\/p>/g, '\n$1\n')
+      .replace(/<p>/g, '\n')
+      .replace(/<\/p>/g, '\n');
+
+    // Strip list structure: remove <ul>/<ol> wrappers, convert <li> to "- "
+    // Run multiple passes to handle nested lists
+    for (let pass = 0; pass < 3; pass++) {
+      codeBlockParts[i] = codeBlockParts[i]
+        .replace(/<ul[^>]*>\n?/g, '\n')
+        .replace(/<\/ul>\n?/g, '\n')
+        .replace(/<ol[^>]*>\n?/g, '\n')
+        .replace(/<\/ol>\n?/g, '\n')
+        .replace(/<li[^>]*>([\s\S]*?)<\/li>/g, '- $1');
+    }
+
+    // Final cleanup: strip any residual HTML tags
+    codeBlockParts[i] = codeBlockParts[i].replace(
+      /<\/?(?:ul|ol|li|div|span|a|p|br|em|strong|code|pre|blockquote|table|thead|tbody|tr|td|th|hr|h[1-6]|img|figure|figcaption|section|article|nav|header|footer|main|aside|details|summary|dl|dt|dd)[^>]*>/g,
+      ''
+    );
+
+    if (codeBlockParts[i] !== before) changed = true;
+  }
+
+  if (changed) {
+    writeFileSync(filePath, frontmatter + codeBlockParts.join(''), 'utf-8');
+  }
+}
+
+/**
+ * Rewrite _media/ links to GitHub repo URLs.
+ * TypeDoc copies referenced files into _media/ but those aren't valid in Docusaurus.
+ * It also flattens them to their basename, so the real path is recovered from the
+ * tracked repo files; an unknown or ambiguous name is an error rather than a guess.
+ */
+const GITHUB_BASE = 'https://github.com/camunda/camunda-hub-api-js/blob/main/';
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const trackedPathsByName = new Map();
+for (const path of execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf-8' })
+  .split('\n')
+  .filter(Boolean)) {
+  const name = basename(path);
+  trackedPathsByName.set(name, [...(trackedPathsByName.get(name) ?? []), path]);
+}
+const mediaLinkErrors = [];
+
+function rewriteMediaLinks(filePath) {
+  let content = readFileSync(filePath, 'utf-8');
+  const before = content;
+  content = content.replace(
+    /\]\((?:\.\.\/)*_media\/([^)#]+)(#[^)]*)?\)/g,
+    (match, name, fragment = '') => {
+      const paths = trackedPathsByName.get(name) ?? [];
+      if (paths.length !== 1) {
+        mediaLinkErrors.push(
+          `  ${filePath}: _media/${name} matches ${paths.length} tracked files (${paths.join(', ')})`
+        );
+        return match;
+      }
+      return `](${GITHUB_BASE}${paths[0]}${fragment})`;
+    }
+  );
+  if (content !== before) {
+    writeFileSync(filePath, content, 'utf-8');
+  }
+}
+
+/**
+ * Create _category_.json for Docusaurus sidebar in each subdirectory.
+ */
+function createCategoryFiles(dir) {
+  const entries = readdirSync(dir);
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    if (!statSync(fullPath).isDirectory()) continue;
+    if (entry.startsWith('_') || entry.startsWith('.')) continue;
+
+    const label = CATEGORY_LABELS[entry] || stemToTitle(entry);
+    const categoryFile = join(fullPath, '_category_.json');
+
+    if (!existsSync(categoryFile)) {
+      const category = {
+        label,
+      };
+      if (CATEGORY_POSITIONS[entry] !== undefined) {
+        category.position = CATEGORY_POSITIONS[entry];
+      }
+      writeFileSync(categoryFile, `${JSON.stringify(category, null, 2)}\n`, 'utf-8');
+    }
+
+    // Recurse into subdirectories
+    createCategoryFiles(fullPath);
+  }
+}
+
+/**
+ * Process all markdown files recursively.
+ */
+function processDirectory(dir) {
+  const entries = readdirSync(dir);
+  let count = 0;
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    if (statSync(fullPath).isDirectory()) {
+      count += processDirectory(fullPath);
+    } else if (entry.endsWith('.md')) {
+      addFrontmatter(fullPath);
+      cleanHtml(fullPath);
+      rewriteMediaLinks(fullPath);
+      count++;
+    }
+  }
+
+  return count;
+}
+
+// Run
+const count = processDirectory(docsDir);
+if (mediaLinkErrors.length > 0) {
+  console.error(`Cannot resolve ${mediaLinkErrors.length} _media link(s) to a repo file:`);
+  for (const err of mediaLinkErrors) console.error(err);
+  process.exit(1);
+}
+// Every _media link now points at GitHub; the copies would only leak into camunda-docs.
+rmSync(join(docsDir, '_media'), { recursive: true, force: true });
+createCategoryFiles(docsDir);
+console.log(`Post-processed ${count} markdown files in ${docsDir}`);

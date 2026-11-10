@@ -40,6 +40,8 @@ jobs:
         run: npm run format:check
       - name: Typecheck
         run: npm run typecheck
+      - name: API docs (HTML + Markdown, warnings fail)
+        run: npm run docs:api && npm run docs:md
 
   # Blocking guard: regenerating from the spec bundle COMMITTED IN THIS BRANCH must
   # reproduce the committed `src/gen` byte-for-byte.

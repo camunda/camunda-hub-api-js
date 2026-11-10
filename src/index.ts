@@ -21,7 +21,14 @@ export {
   liveClock,
   type TestClock,
 } from './runtime/clock';
-export type { SdkError } from './runtime/errors';
+export type {
+  AuthSdkError,
+  CancelSdkError,
+  HttpSdkError,
+  NetworkSdkError,
+  SdkError,
+  ValidationSdkError,
+} from './runtime/errors';
 export {
   CamundaValidationError,
   isSdkError,
@@ -57,11 +64,22 @@ export type {
   WithSearchPagination,
 } from './runtime/searchPagination';
 export type { SupportLogger } from './runtime/supportLogger';
-export type { TelemetryHooks } from './runtime/telemetry';
+export type {
+  TelemetryAuthErrorEvent,
+  TelemetryAuthStartEvent,
+  TelemetryAuthSuccessEvent,
+  TelemetryHooks,
+  TelemetryHttpEndEvent,
+  TelemetryHttpErrorEvent,
+  TelemetryHttpStartEvent,
+  TelemetryRetryEvent,
+} from './runtime/telemetry';
 // Runtime types used in public signatures
 export {
   type AuthStrategy,
   CamundaConfigurationError,
+  type ConfigErrorCode,
+  type ConfigErrorDetail,
   type HubConfig,
   type ValidationMode,
 } from './runtime/unifiedConfiguration';

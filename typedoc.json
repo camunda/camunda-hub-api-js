@@ -1,0 +1,33 @@
+{
+  "entryPoints": ["src/index.ts", "src/logger.ts", "src/fn/index.ts"],
+  "out": "docs",
+  "name": "Camunda Hub TypeScript SDK",
+  "readme": "README.md",
+  "jsDocCompatibility": {
+    "exampleTag": false
+  },
+  "blockTags": [
+    "@defaultValue",
+    "@deprecated",
+    "@example",
+    "@param",
+    "@privateRemarks",
+    "@remarks",
+    "@returns",
+    "@see",
+    "@throws",
+    "@typeParam",
+    "@operationId",
+    "@tags",
+    "@description",
+    "@module"
+  ],
+  "intentionallyNotExported": ["IsBrandedKey", "SearchSignature", "ItemsOf"],
+  "exclude": ["**/node_modules/**", "**/tests/**", "scripts/**"],
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "hideGenerator": true,
+  "githubPages": false,
+  "skipErrorChecking": true,
+  "treatWarningsAsErrors": true
+}
