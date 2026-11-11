@@ -155,6 +155,8 @@ export function addMember(core: HubCore, arg: any, options?: OperationOptions): 
  *
  * Creates or updates a cluster registration in Camunda Hub via discovery. This does not provision infrastructure — it only creates or updates the cluster registration in Hub. This endpoint requires dynamic cluster management to be enabled. If a cluster with the resolved ID already exists, its registration will be updated.
  *
+ * **Self-Managed only.** Camunda SaaS does not provide this endpoint.
+ *
  * @operationId createClusterRegistration
  * @tags Cluster
  */
@@ -1109,6 +1111,8 @@ export function duplicateProjectSnapshot(core: HubCore, arg: any, options?: Oper
  *
  * Returns all cluster registrations.
  *
+ * **Self-Managed only.** Camunda SaaS does not provide this endpoint.
+ *
  * @operationId getClusterRegistrations
  * @tags Cluster
  */
@@ -1159,6 +1163,8 @@ export function getClusterRegistrations(core: HubCore, options?: OperationOption
  * Get cluster usage metrics
  *
  * Returns the usage metrics for a cluster. The provided token is forwarded to the Orchestration Cluster API of the target cluster, so it must additionally include the read:* permission for the orchestration-api audience.
+ *
+ * **Self-Managed only.** Camunda SaaS does not provide this endpoint.
  *
  * @operationId getClusterUsageMetrics
  * @tags Cluster
@@ -2313,6 +2319,8 @@ export function purgeFile(core: HubCore, arg: any, options?: OperationOptions): 
  * Remove a cluster registration
  *
  * Removes a cluster registration from Camunda Hub. This does not delete or deprovision the actual cluster infrastructure — it only removes the cluster registration from Hub. This endpoint requires dynamic cluster management to be enabled.
+ *
+ * **Self-Managed only.** Camunda SaaS does not provide this endpoint.
  *
  * @operationId removeClusterRegistration
  * @tags Cluster

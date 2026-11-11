@@ -84,6 +84,7 @@ async function main() {
     summary?: string;
     description?: string;
     tags?: string[];
+    availability?: string;
     originalOpId: string;
     unionBodies: string[];
     verb: string;
@@ -101,6 +102,7 @@ async function main() {
       summary: op.summary,
       description: op.description,
       tags: op.tags,
+      availability: availabilityNote(originalId, op.vendorExtensions?.['x-availability']),
       originalOpId: originalId,
       unionBodies: (op.requestBodyUnionRefs || []).map((r: string) => sanitize(r)),
       verb: op.method.toLowerCase(),
@@ -486,6 +488,23 @@ async function main() {
   console.log(`[class-gen] Wrote HubClient.ts with ${ops.length} methods`);
 }
 
+/**
+ * Prose for the spec's `x-availability` marker. Unknown values fail generation, so a new
+ * deployment marker is never dropped silently. Prose rather than a custom tag: typedoc
+ * treats unknown tags as errors.
+ */
+const AVAILABILITY_NOTES: Record<string, string> = {
+  sm: '**Self-Managed only.** Camunda SaaS does not provide this endpoint.',
+  saas: '**SaaS only.** Self-Managed does not provide this endpoint.',
+};
+function availabilityNote(opId: string, value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  const note = typeof value === 'string' ? AVAILABILITY_NOTES[value] : undefined;
+  if (!note) {
+    throw new Error(`[class-gen] ${opId}: unknown x-availability ${JSON.stringify(value)}`);
+  }
+  return note;
+}
 function sanitize(id: string): string {
   return id.replace(/XML/g, 'Xml');
 }
@@ -493,6 +512,7 @@ function forwardJsDoc(op: any, docs: Record<string, string>): string {
   const base = docs[op.opId];
   if (base) {
     const inj: string[] = [];
+    if (op.availability) inj.push(' *', ` * ${op.availability}`);
     inj.push(' *');
     inj.push(` * @operationId ${op.originalOpId}`);
     if (op.tags?.length) inj.push(` * @tags ${op.tags.join(', ')}`);
@@ -506,10 +526,12 @@ function buildJsDoc(op: {
   description?: string;
   originalOpId: string;
   tags?: string[];
+  availability?: string;
 }) {
   const parts: string[] = [];
   if (op.summary) parts.push(op.summary);
   if (op.description) parts.push(...String(op.description).split(/\r?\n/));
+  if (op.availability) parts.push('', op.availability);
   parts.push(`@operationId ${op.originalOpId}`);
   if (op.tags?.length) parts.push(`@tags ${op.tags.join(', ')}`);
   return `/**\n${parts.map((l) => ` * ${l.replace(/\*/g, '')}`).join('\n')}\n */`;
