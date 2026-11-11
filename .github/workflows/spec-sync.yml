@@ -3,6 +3,17 @@ name: Spec Sync
 # Re-bundles the Hub public API spec from camunda/camunda-hub (private) and, when it
 # changed, opens (or updates) a PR with the new vendored bundle and the regenerated client.
 #
+# The release type is decided from the SDK, not from the spec diff: scripts/api-compat.ts
+# type-checks the regenerated declarations against those of the committed client.
+#   none      -> fix(spec)   (docs or validation only; patch release)
+#   additive  -> feat(spec)  (minor release)
+#   breaking  -> feat(spec) with a BREAKING CHANGE footer (major release). The shared
+#                breaking-change guard then blocks the PR until a maintainer adds the
+#                `breaking-change-approved` label, so a major release is always a human call.
+# The oasdiff changelog of the spec itself goes into the PR body for reviewers.
+# When the regenerated client does not build (typically: examples that no longer compile
+# after a breaking change) the PR is opened as a draft with the build log summary.
+#
 # Needs the camunda-sdk-automation GitHub App installed on camunda/camunda-hub with
 # `contents: read`, in addition to this repository (contents + pull-requests: write).
 
@@ -68,6 +79,16 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      # The committed client's public declarations are the baseline for the API check.
+      - name: Baseline API declarations and spec
+        run: |
+          set -euo pipefail
+          npm run bundle
+          mkdir -p .api-baseline/fn
+          cp dist/*.d.ts .api-baseline/
+          cp dist/fn/*.d.ts .api-baseline/fn/
+          cp external-spec/bundled/rest-api.bundle.json "$RUNNER_TEMP/spec-baseline.json"
+
       - name: Re-bundle spec from camunda/camunda-hub
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -88,8 +109,59 @@ jobs:
           fi
 
       - name: Regenerate and build
+        id: build
         if: steps.diff.outputs.changed == 'true'
-        run: npm run build
+        run: |
+          set -uo pipefail
+          if npm run build > "$RUNNER_TEMP/build.log" 2>&1; then
+            echo 'ok=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ok=false' >> "$GITHUB_OUTPUT"
+            echo '::warning::The regenerated client does not build; the PR will be a draft.'
+            tail -n 60 "$RUNNER_TEMP/build.log"
+            # The API check still needs declarations. If even the bundle fails, generation
+            # itself is broken and there is nothing sensible to propose.
+            npm run bundle
+          fi
+
+      - name: Check public API compatibility
+        id: compat
+        if: steps.diff.outputs.changed == 'true'
+        run: npx tsx scripts/api-compat.ts --baseline .api-baseline --out-md "$RUNNER_TEMP/api-compat.md"
+
+      - name: Install oasdiff (pinned, checksum-verified)
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          OASDIFF_VERSION: 1.37.0
+        run: |
+          set -euo pipefail
+          base="https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}"
+          tarball="oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 3 "${base}/${tarball}" -o "${tarball}"
+          curl -fsSL --retry 3 "${base}/checksums.txt" -o oasdiff-checksums.txt
+          grep " ${tarball}\$" oasdiff-checksums.txt | sha256sum -c -
+          tar -xzf "${tarball}" oasdiff
+          sudo install -m 0755 oasdiff /usr/local/bin/oasdiff
+
+      # Informational only: the release type comes from the API check above.
+      - name: Spec changelog (oasdiff)
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          if ! oasdiff changelog "$RUNNER_TEMP/spec-baseline.json" external-spec/bundled/rest-api.bundle.json \
+               > "$RUNNER_TEMP/oasdiff.txt" 2> "$RUNNER_TEMP/oasdiff.err"; then
+            { echo '(oasdiff failed)'; cat "$RUNNER_TEMP/oasdiff.err"; } > "$RUNNER_TEMP/oasdiff.txt"
+          fi
+          cat "$RUNNER_TEMP/oasdiff.txt"
+
+      - name: Summary
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          {
+            echo "**Decision:** \`${{ steps.compat.outputs.decision }}\` (build ok: \`${{ steps.build.outputs.ok }}\`)"
+            echo
+            cat "$RUNNER_TEMP/api-compat.md"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open or update PR
         if: steps.diff.outputs.changed == 'true'
@@ -97,17 +169,67 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
           COMMIT: ${{ steps.diff.outputs.commit }}
+          DECISION: ${{ steps.compat.outputs.decision }}
+          BUILD_OK: ${{ steps.build.outputs.ok }}
         run: |
           set -euo pipefail
           BRANCH=automation/spec-sync
+          case "$DECISION" in
+            none) TYPE=fix ;;
+            additive | breaking) TYPE=feat ;;
+            *) echo "::error::Unknown API decision '$DECISION'"; exit 1 ;;
+          esac
+          TITLE="${TYPE}(spec): sync Hub public API spec (camunda-hub@${COMMIT})"
+          FOOTER=''
+          if [ "$DECISION" = breaking ]; then
+            FOOTER="BREAKING CHANGE: the Hub public API change at camunda-hub@${COMMIT} breaks the SDK's public TypeScript API; see the API compatibility report in the pull request."
+          fi
+
+          {
+            echo "Re-bundled from camunda/camunda-hub@${COMMIT} by spec-sync.yml, with the client regenerated."
+            echo
+            if [ "$BUILD_OK" != true ]; then
+              echo "> [!WARNING]"
+              echo "> The regenerated client does not build (see the spec-sync run log). This is usually examples that no longer compile after an API change: fix them on this branch, then mark the PR ready."
+              echo
+            fi
+            if [ "$DECISION" = breaking ]; then
+              echo "> [!IMPORTANT]"
+              echo "> This is a **breaking** change for SDK users and will release a new major version. The breaking-change guard blocks merging until a maintainer adds the \`breaking-change-approved\` label. When squash-merging, keep the \`BREAKING CHANGE:\` footer in the commit message."
+              echo
+            fi
+            echo "## SDK public API (decides the release type)"
+            echo
+            cat "$RUNNER_TEMP/api-compat.md"
+            echo
+            echo "## Spec changelog (oasdiff, for reference)"
+            echo
+            echo '```'
+            head -c 50000 "$RUNNER_TEMP/oasdiff.txt"
+            echo '```'
+          } > "$RUNNER_TEMP/pr-body.md"
+
           git config user.name "${APP_SLUG}[bot]"
           git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
           git switch -C "$BRANCH"
           git add -A
-          git commit -m "feat(spec): sync Hub public API spec (camunda-hub@${COMMIT})"
+          if [ -n "$FOOTER" ]; then
+            git commit -m "$TITLE" -m "$FOOTER"
+          else
+            git commit -m "$TITLE"
+          fi
           git push --force origin "$BRANCH"
-          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
-            gh pr create --head "$BRANCH" --base main \
-              --title "feat(spec): sync Hub public API spec" \
-              --body "Re-bundled from camunda/camunda-hub@${COMMIT} by spec-sync.yml, with the client regenerated. Review \`src/gen/\` for API changes; a removed or changed operation needs a \`BREAKING CHANGE:\` footer before merge."
+
+          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$PR" ]; then
+            DRAFT=()
+            [ "$BUILD_OK" = true ] || DRAFT=(--draft)
+            gh pr create --head "$BRANCH" --base main --title "$TITLE" --body-file "$RUNNER_TEMP/pr-body.md" "${DRAFT[@]}"
+          else
+            gh pr edit "$PR" --title "$TITLE" --body-file "$RUNNER_TEMP/pr-body.md"
+            if [ "$BUILD_OK" = true ]; then
+              gh pr ready "$PR" || true
+            else
+              gh pr ready "$PR" --undo || true
+            fi
           fi
