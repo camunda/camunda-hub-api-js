@@ -162,3 +162,4 @@ missing-examples.json
 # Upstream Hub spec (fetched from the private camunda/camunda-hub repo by
 # `npm run spec:fetch`). Only the bundle in external-spec/bundled/ is committed.
 external-spec/upstream/
+.api-baseline/
