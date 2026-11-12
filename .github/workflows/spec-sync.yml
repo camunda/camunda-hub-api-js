@@ -218,9 +218,18 @@ jobs:
           else
             git commit -m "$TITLE"
           fi
+          # An approval covers only the change a maintainer reviewed. Drop it from an
+          # existing sync PR before force-pushing a replacement, so a new breaking change
+          # always needs fresh approval. Fail if the label cannot be removed.
+          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$PR" ]; then
+            if gh pr view "$PR" --json labels --jq '.labels[].name' | grep -qx 'breaking-change-approved'; then
+              gh pr edit "$PR" --remove-label breaking-change-approved
+            fi
+          fi
+
           git push --force origin "$BRANCH"
 
-          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
           if [ -z "$PR" ]; then
             DRAFT=()
             [ "$BUILD_OK" = true ] || DRAFT=(--draft)

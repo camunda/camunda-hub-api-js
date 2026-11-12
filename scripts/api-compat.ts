@@ -155,7 +155,22 @@ function inputPaths(
     return;
   }
   if (depth < 0 || seen.has(t)) return;
-  if (t.isUnionOrIntersection()) {
+  if (t.isUnion()) {
+    // Qualify each branch of a discriminated union by its literal-typed properties, so a key
+    // removed from one branch is caught even when another branch still accepts it.
+    for (const part of t.types)
+      inputPaths(
+        checker,
+        part,
+        `${prefix}${discriminant(checker, part)}`,
+        paths,
+        open,
+        depth,
+        seen
+      );
+    return;
+  }
+  if (t.isIntersection()) {
     for (const part of t.types) inputPaths(checker, part, prefix, paths, open, depth, seen);
     return;
   }
@@ -173,6 +188,24 @@ function inputPaths(
     paths.add(path);
     inputPaths(checker, checker.getTypeOfSymbol(p), path, paths, open, depth - 1, next);
   }
+}
+
+/**
+ * `<kind="a">`-style tag naming a union branch by its literal-typed properties, or '' when the
+ * branch has none (then branches share their paths).
+ */
+function discriminant(checker: ts.TypeChecker, t: ts.Type): string {
+  if (!(t.flags & ts.TypeFlags.Object)) return '';
+  const tags: string[] = [];
+  for (const p of checker.getPropertiesOfType(t)) {
+    const pt = checker.getNonNullableType(checker.getTypeOfSymbol(p));
+    if (
+      pt.flags &
+      (ts.TypeFlags.StringLiteral | ts.TypeFlags.NumberLiteral | ts.TypeFlags.BooleanLiteral)
+    )
+      tags.push(`${p.getName()}=${checker.typeToString(pt)}`);
+  }
+  return tags.length ? `<${tags.sort().join(',')}>` : '';
 }
 
 /** Argument property paths of a callable type, skipping the first `skip` parameters. */
@@ -333,6 +366,9 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
         removedInputs: removedInputs(oldSide.checker, oldType, newSide.checker, newType, 0),
       });
     }
+    for (const p of newSide.checker.getPropertiesOfType(newType))
+      if (!oldType.getProperty(p.getName()))
+        report.addedExports.push(`${exportLabel}.${p.getName()}`);
     for (const p of oldSide.checker.getPropertiesOfType(oldType)) {
       const m = p.getName();
       const np = newType.getProperty(m);

@@ -167,6 +167,20 @@ describe('api-compat', () => {
     );
   });
 
+  it('removing a property from one branch of a discriminated union is breaking', () => {
+    const r = compare(
+      {
+        request:
+          "name: string; target?: { kind: 'a'; tag?: string } | { kind: 'b'; tag?: string };",
+      },
+      { request: "name: string; target?: { kind: 'a' } | { kind: 'b'; tag?: string };" }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain(
+      'HubClient.createProject (parameters: removed arg0.target<kind="a">.tag)'
+    );
+  });
+
   it('a removed key under an index signature is not breaking', () => {
     const r = compare(
       { request: 'name: string; labels?: { [k: string]: string; env?: string };' },
@@ -193,6 +207,15 @@ describe('api-compat', () => {
     );
     expect(r.decision).toBe('breaking');
     expect(r.removedExports).toEqual(['.: ProjectKey.assumeExists']);
+  });
+
+  it('adding a member to a value export is additive', () => {
+    const r = compare(
+      { extraExports: key(keyMembers) },
+      { extraExports: key(`${keyMembers} parse(value: string): ProjectKey;`) }
+    );
+    expect(r.decision).toBe('additive');
+    expect(r.addedExports).toEqual(['.: ProjectKey.parse']);
   });
 
   it('removing the value side of a merged type/value export is breaking', () => {
