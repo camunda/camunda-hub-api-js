@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { availabilityNote } from '../lib/availability';
 
 const ROOT = process.cwd();
 const METADATA_PATH = path.join(ROOT, 'external-spec/bundled/spec-metadata.json');
@@ -488,23 +489,6 @@ async function main() {
   console.log(`[class-gen] Wrote HubClient.ts with ${ops.length} methods`);
 }
 
-/**
- * Prose for the spec's `x-availability` marker. Unknown values fail generation, so a new
- * deployment marker is never dropped silently. Prose rather than a custom tag: typedoc
- * treats unknown tags as errors.
- */
-const AVAILABILITY_NOTES: Record<string, string> = {
-  sm: '**Self-Managed only.** Camunda SaaS does not provide this endpoint.',
-  saas: '**SaaS only.** Self-Managed does not provide this endpoint.',
-};
-function availabilityNote(opId: string, value: unknown): string | undefined {
-  if (value === undefined) return undefined;
-  const note = typeof value === 'string' ? AVAILABILITY_NOTES[value] : undefined;
-  if (!note) {
-    throw new Error(`[class-gen] ${opId}: unknown x-availability ${JSON.stringify(value)}`);
-  }
-  return note;
-}
 function sanitize(id: string): string {
   return id.replace(/XML/g, 'Xml');
 }

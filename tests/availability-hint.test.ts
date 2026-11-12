@@ -6,7 +6,10 @@ const root = path.resolve(__dirname, '..');
 const metadata = JSON.parse(
   fs.readFileSync(path.join(root, 'external-spec/bundled/spec-metadata.json'), 'utf8')
 ) as {
-  operations: Array<{ operationId: string; vendorExtensions?: Record<string, unknown> }>;
+  operations: Array<{
+    operationId: string;
+    vendorExtensions?: Record<string, unknown>;
+  }>;
 };
 
 /** operationId -> the JSDoc block above its generated method or function. */
@@ -38,4 +41,29 @@ describe('x-availability JSDoc hint', () => {
       expect(hinted).toEqual([...selfManagedOnly].sort());
     });
   }
+});
+
+describe('availabilityNote', () => {
+  it('maps known markers and ignores absent ones', async () => {
+    const { availabilityNote } = await import('../hooks/lib/availability');
+    expect(availabilityNote('op', undefined)).toBeUndefined();
+    expect(availabilityNote('op', 'sm')).toContain('Self-Managed only');
+    expect(availabilityNote('op', 'saas')).toContain('SaaS only');
+  });
+
+  it.each([
+    'constructor',
+    'toString',
+    '__proto__',
+    'hasOwnProperty',
+    'valueOf',
+    'other',
+    '',
+    42,
+    null,
+    {},
+  ])('rejects unknown or inherited value %j', async (value) => {
+    const { availabilityNote } = await import('../hooks/lib/availability');
+    expect(() => availabilityNote('op', value)).toThrow(/unknown x-availability/);
+  });
 });
