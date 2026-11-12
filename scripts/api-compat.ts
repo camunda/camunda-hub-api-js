@@ -12,14 +12,22 @@
  *   accepted are no longer accepted, or when the new result is not assignable to the old
  *   result, or when an argument property path an object literal could set (`arg0.description`,
  *   nested ones included) no longer exists — object literals are excess-property checked, so
- *   a removed input property breaks callers even though assignability still holds. The same
- *   applies to each search operation's `.paginate(...)`.
+ *   a removed input property breaks callers even though assignability still holds. Union
+ *   branches are matched across sides by mutual assignability before their paths are
+ *   compared, so widening a branch's discriminator is additive, not a spurious removal. The
+ *   same applies to each search operation's `.paginate(...)`.
+ * - The raw return wrapper is compared too: replacing `CancelablePromise<T>` with `Promise<T>`
+ *   (or returning a synchronous value) is BREAKING, even when the awaited result is unchanged.
+ *   Result property paths (`result.name`, nested ones included) that disappear are BREAKING as
+ *   well — assignability alone misses a removed *optional* result property, but callers
+ *   reading it stop compiling.
  * - Exported values are compared independently of a same-named type: removing the value, or a
  *   member of it (such as a branded key's `assumeExists`), is BREAKING; its callable members
- *   are compared like functions.
+ *   are compared like functions. A value companion added to a type-only export is ADDITIVE.
  * - A removed export (from any entry point) or a removed client method is BREAKING.
- * - Anything else that differs (added exports or methods, signatures that changed
- *   compatibly, changed non-generic exported types) is ADDITIVE.
+ * - Anything else that differs (added exports or methods — including a `.paginate` added to
+ *   an existing method — signatures that changed compatibly, changed non-generic exported
+ *   types) is ADDITIVE.
  * - Otherwise there is NO public API change.
  *
  * Exported types that are not used by a signature (for example models users annotate their
@@ -60,7 +68,30 @@ const CORE_ENTRY = 'index';
 interface Check {
   line: string;
   /** What a failure of this assertion means. */
-  onFail: { list: keyof CompatReport; item: string };
+  onFail: {
+    list: keyof CompatReport;
+    item: string;
+    /**
+     * The id of another check (its `_cN` const) that must also have failed for this failure
+     * to count. Used to gate the raw-return-wrapper assignment on the wrapper-identity
+     * check, because a conditional type would be deferred and never fail.
+     */
+    ifAlsoFailed?: string;
+    /**
+     * The id of another check whose failure *suppresses* this one. The wrapper assignment
+     * uses it to silence itself: when the assignment fails, the wrapper changed, and the
+     * identity check then decides whether the change is breaking.
+     */
+    unlessAlsoFailed?: string;
+    /**
+     * The id of another check that must have *passed* for this failure to count. The
+     * awaited-result assignability check uses it to defer to the wrapper checks when the
+     * return wrapper itself changed.
+     */
+    ifNotFailed?: string;
+    /** A second `ifNotFailed` gate (both must have passed). */
+    ifNotFailed2?: string;
+  };
 }
 
 function arg(name: string): string | undefined {
@@ -140,6 +171,11 @@ function containsEnum(checker: ts.TypeChecker, t: ts.Type, depth = 1): boolean {
  * disappears breaks existing calls even though the old argument type is still assignable to the
  * new one. `open` collects paths below which any key is accepted (index signatures, `any`,
  * `unknown`, `object`), so a removed key under them is not a break.
+ *
+ * `mode` selects the caller: `input` walks argument types (a union part the other side does
+ * not accept is just a widened alternative), `result` walks return types (a union part the
+ * other side does not accept — the `undefined` of a property that became optional — means
+ * callers reading the path now get `undefined`, so the path counts as removed).
  */
 function inputPaths(
   checker: ts.TypeChecker,
@@ -148,7 +184,9 @@ function inputPaths(
   paths: Set<string>,
   open: Set<string>,
   depth = 4,
-  seen: Set<ts.Type> = new Set()
+  seen: Set<ts.Type> = new Set(),
+  other?: { checker: ts.TypeChecker; t: ts.Type; match: 'forward' | 'reverse' },
+  mode: 'input' | 'result' = 'input'
 ): void {
   if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.NonPrimitive)) {
     open.add(prefix);
@@ -156,66 +194,212 @@ function inputPaths(
   }
   if (depth < 0 || seen.has(t)) return;
   if (t.isUnion()) {
+    // A union on one side against a non-union on the other (for example an optional
+    // property's `string | undefined` against the old required `string`) is not a branch
+    // pairing problem: the union's parts are alternatives of the same path, and the path
+    // is already recorded by the parent. Recursing would only walk primitives. But when the
+    // union gained a part the other side does not accept (the `undefined` of a property
+    // that became optional), that part is a removed path: callers reading the property get
+    // `undefined` where they had a value.
+    if (other && !other.t.isUnion() && !(other.t.flags & ts.TypeFlags.Object)) {
+      if (mode === 'result')
+        for (const part of t.types) {
+          const a = assignableAcross(checker, part, other.checker, other.t);
+          if (!a) paths.add(`${prefix}?`);
+        }
+      return;
+    }
     // Qualify each branch of a discriminated union by its literal-typed properties, so a key
-    // removed from one branch is caught even when another branch still accepts it.
-    for (const part of t.types)
+    // removed from one branch is caught even when another branch still accepts it. When the
+    // other side's type is known, each branch is compared only against the other-side branch
+    // it pairs with: widening a branch's discriminator (for example `kind: 'a'` to
+    // `kind: 'a' | 'c'`) then keeps the branch's qualified paths instead of reporting every
+    // property of the branch as removed. Pairing is directional — `forward` (this side is the
+    // old one) matches a branch to the other-side branch it is assignable to; `reverse`
+    // (this side is the new one) matches it to the other-side branch assignable to it. A
+    // widened branch pairs with its origin in both directions; a branch with no pair is
+    // reported wholesale. Non-object branches (the `undefined` of an optional property,
+    // primitives) are not paired: they carry no property paths, and `undefined` would
+    // otherwise consume the counterpart an object branch needs.
+    const otherParts = other?.t.isUnion() ? other.t.types : [];
+    const matched = new Set<ts.Type>();
+    for (const part of t.types) {
+      const counterpart =
+        other && part.flags & ts.TypeFlags.Object
+          ? otherParts.find((q) => {
+              if (matched.has(q)) return false;
+              return other.match === 'forward'
+                ? assignableAcross(checker, part, other.checker, q)
+                : assignableAcross(other.checker, q, checker, part);
+            })
+          : undefined;
+      if (counterpart) matched.add(counterpart);
+      // A non-object branch (the `undefined` of an optional property, a primitive) carries
+      // no property paths; it only matters when the other side is an object the property
+      // was narrowed into (a required property becoming optional is not a removal).
+      if (!(part.flags & ts.TypeFlags.Object) && other && !counterpart) {
+        const otherIsObj = Boolean(other.t.flags & ts.TypeFlags.Object);
+        const otherIsUnion = other.t.isUnion();
+        const someObjOrAssign =
+          otherIsUnion &&
+          (other.t as ts.UnionType).types.some(
+            (q) => q.flags & ts.TypeFlags.Object || assignableAcross(checker, part, other.checker, q)
+          );
+        const nonUnionAssign =
+          !otherIsUnion && assignableAcross(checker, part, other.checker, other.t);
+        const kept = otherIsObj || someObjOrAssign || nonUnionAssign;
+        if (kept) continue;
+      }
       inputPaths(
         checker,
         part,
-        `${prefix}${discriminant(checker, part)}`,
+        `${prefix}${discriminant(checker, part, other && counterpart ? { checker: other.checker, t: counterpart } : undefined)}`,
         paths,
         open,
         depth,
-        seen
+        seen,
+        other && counterpart
+          ? { checker: other.checker, t: counterpart, match: other.match }
+          : undefined,
+        mode
       );
+    }
     return;
   }
   if (t.isIntersection()) {
-    for (const part of t.types) inputPaths(checker, part, prefix, paths, open, depth, seen);
+    for (const part of t.types)
+      inputPaths(checker, part, prefix, paths, open, depth, seen, other, mode);
     return;
   }
-  if (!(t.flags & ts.TypeFlags.Object)) return;
+  if (!(t.flags & ts.TypeFlags.Object)) {
+    return;
+  }
   if (t.getCallSignatures().length || t.getConstructSignatures().length) return;
   const next = new Set(seen).add(t);
   if (checker.isArrayType(t) || checker.isTupleType(t)) {
-    for (const el of checker.getTypeArguments(t as ts.TypeReference))
-      inputPaths(checker, el, `${prefix}[]`, paths, open, depth - 1, next);
+    const args = checker.getTypeArguments(t as ts.TypeReference);
+    args.forEach((el, i) => {
+      // Match element types positionally, so paths under an array/tuple of a union keep
+      // their matched counterpart.
+      const otherEl =
+        other &&
+        ((other.checker.isArrayType(other.t) || other.checker.isTupleType(other.t))
+          ? other.checker.getTypeArguments(other.t as ts.TypeReference)[i]
+          : undefined);
+      inputPaths(
+        checker,
+        el,
+        `${prefix}[]`,
+        paths,
+        open,
+        depth - 1,
+        next,
+        otherEl ? { checker: other.checker, t: otherEl, match: other.match } : undefined,
+        mode
+      );
+    });
     return;
   }
   if (checker.getIndexInfosOfType(t).length) open.add(prefix);
   for (const p of checker.getPropertiesOfType(t)) {
     const path = `${prefix}.${p.getName()}`;
     paths.add(path);
-    inputPaths(checker, checker.getTypeOfSymbol(p), path, paths, open, depth - 1, next);
+    const op = other?.t.getProperty(p.getName());
+    inputPaths(
+      checker,
+      checker.getTypeOfSymbol(p),
+      path,
+      paths,
+      open,
+      depth - 1,
+      next,
+      other && op
+        ? { checker: other.checker, t: other.checker.getTypeOfSymbol(op), match: other.match }
+        : undefined,
+      mode
+    );
   }
 }
 
 /**
  * `<kind="a">`-style tag naming a union branch by its literal-typed properties, or '' when the
- * branch has none (then branches share their paths).
+ * branch has none (then branches share their paths). When the branch's paired counterpart on
+ * the other side is known, the tag is taken from the *narrower* of the two (the one assignable
+ * to the other): a widened branch (`kind: 'a' | 'c'`) then keeps its origin's `<kind="a">`
+ * tag instead of dropping it, so its paths still line up with the old side's.
  */
-function discriminant(checker: ts.TypeChecker, t: ts.Type): string {
+function discriminant(
+  checker: ts.TypeChecker,
+  t: ts.Type,
+  other?: { checker: ts.TypeChecker; t: ts.Type }
+): string {
   if (!(t.flags & ts.TypeFlags.Object)) return '';
+  const narrow =
+    other &&
+    other.t.flags & ts.TypeFlags.Object &&
+    assignableAcross(other.checker, other.t, checker, t) &&
+    !assignableAcross(checker, t, other.checker, other.t)
+      ? { checker: other.checker, t: other.t }
+      : { checker, t };
   const tags: string[] = [];
-  for (const p of checker.getPropertiesOfType(t)) {
-    const pt = checker.getNonNullableType(checker.getTypeOfSymbol(p));
+  for (const p of narrow.checker.getPropertiesOfType(narrow.t)) {
+    const pt = narrow.checker.getNonNullableType(narrow.checker.getTypeOfSymbol(p));
     if (
       pt.flags &
       (ts.TypeFlags.StringLiteral | ts.TypeFlags.NumberLiteral | ts.TypeFlags.BooleanLiteral)
     )
-      tags.push(`${p.getName()}=${checker.typeToString(pt)}`);
+      tags.push(`${p.getName()}=${narrow.checker.typeToString(pt)}`);
   }
   return tags.length ? `<${tags.sort().join(',')}>` : '';
 }
 
+/**
+ * True when a value of type `from` (from one side's checker) is assignable to type `to` (from
+ * the other side's checker). Both sides' declarations live in the same check program, so
+ * `isTypeAssignableTo` compares them structurally.
+ */
+function assignableAcross(
+  fromChecker: ts.TypeChecker,
+  from: ts.Type,
+  toChecker: ts.TypeChecker,
+  to: ts.Type
+): boolean {
+  try {
+    return fromChecker.isTypeAssignableTo(from, to);
+  } catch {
+    // Cross-program comparisons can hit unsupported type shapes; treat them as unmatched.
+    return false;
+  }
+}
+
 /** Argument property paths of a callable type, skipping the first `skip` parameters. */
-function signatureInputs(checker: ts.TypeChecker, t: ts.Type, skip: number) {
+function signatureInputs(
+  checker: ts.TypeChecker,
+  t: ts.Type,
+  skip: number,
+  other?: { checker: ts.TypeChecker; t: ts.Type; match: 'forward' | 'reverse' }
+) {
   const paths = new Set<string>();
   const open = new Set<string>();
-  for (const sig of t.getCallSignatures())
-    sig.parameters
-      .slice(skip)
-      .forEach((p, i) => inputPaths(checker, checker.getTypeOfSymbol(p), `arg${i}`, paths, open));
+  const otherSigs = other?.t.getCallSignatures() ?? [];
+  t.getCallSignatures().forEach((sig, si) => {
+    const otherParams = otherSigs[si]?.parameters ?? [];
+    sig.parameters.slice(skip).forEach((p, i) => {
+      const op = other ? otherParams[skip + i] : undefined;
+      inputPaths(
+        checker,
+        checker.getTypeOfSymbol(p),
+        `arg${i}`,
+        paths,
+        open,
+        4,
+        new Set(),
+        other && op
+          ? { checker: other.checker, t: other.checker.getTypeOfSymbol(op), match: other.match }
+          : undefined
+      );
+    });
+  });
   return { paths, open };
 }
 
@@ -227,8 +411,16 @@ function removedInputs(
   newType: ts.Type,
   skip: number
 ): string[] {
-  const o = signatureInputs(oldChecker, oldType, skip);
-  const nw = signatureInputs(newChecker, newType, skip);
+  const o = signatureInputs(oldChecker, oldType, skip, {
+    checker: newChecker,
+    t: newType,
+    match: 'forward',
+  });
+  const nw = signatureInputs(newChecker, newType, skip, {
+    checker: oldChecker,
+    t: oldType,
+    match: 'reverse',
+  });
   const isOpen = (p: string) => {
     for (let q = p; q.includes('.'); ) {
       q = q.slice(0, q.lastIndexOf('.'));
@@ -236,12 +428,78 @@ function removedInputs(
     }
     return false;
   };
-  return [...o.paths].filter((p) => !nw.paths.has(p) && !isOpen(p)).sort();
+  const removed = [...o.paths].filter((p) => !nw.paths.has(p) && !isOpen(p)).sort();
+  return removed;
+}
+
+/** The type a callable resolves to: the awaited type of a promise result, else the result. */
+function resolvedResult(checker: ts.TypeChecker, t: ts.Type): ts.Type {
+  const awaited = t.getProperty('then') ? checker.getAwaitedType(t) : t;
+  return awaited ?? t;
+}
+
+/** Property paths of a callable's result that callers may read (`result.name`, nested too). */
+function resultPaths(
+  checker: ts.TypeChecker,
+  t: ts.Type,
+  other?: { checker: ts.TypeChecker; t: ts.Type; match: 'forward' | 'reverse' }
+) {
+  const paths = new Set<string>();
+  const open = new Set<string>();
+  const otherSigs = other?.t.getCallSignatures() ?? [];
+  t.getCallSignatures().forEach((sig, si) => {
+    const oSig = otherSigs[si];
+    const rt = resolvedResult(checker, sig.getReturnType());
+    const ort = other && oSig ? resolvedResult(other.checker, oSig.getReturnType()) : undefined;
+    inputPaths(
+      checker,
+      rt,
+      'result',
+      paths,
+      open,
+      4,
+      new Set(),
+      other && oSig && ort ? { checker: other.checker, t: ort, match: other.match } : undefined,
+      'result'
+    );
+  });
+  return { paths, open };
+}
+
+/**
+ * Result property paths the old callable's result exposed that the new one no longer exposes.
+ * Assignability misses a removed *optional* property (a narrower new result is assignable to
+ * the old one), but existing callers reading that property stop compiling. A property whose
+ * type gained a union part the old side does not accept (the `undefined` of a property that
+ * became optional) is reported as `result.<name>?`.
+ */
+function removedResults(
+  oldChecker: ts.TypeChecker,
+  oldType: ts.Type,
+  newChecker: ts.TypeChecker,
+  newType: ts.Type
+): string[] {
+  const o = resultPaths(oldChecker, oldType, { checker: newChecker, t: newType, match: 'forward' });
+  const nw = resultPaths(newChecker, newType, { checker: oldChecker, t: oldType, match: 'reverse' });
+  const isOpen = (p: string) => {
+    for (let q = p; q.includes('.'); ) {
+      q = q.slice(0, q.lastIndexOf('.'));
+      if (nw.open.has(q)) return true;
+    }
+    return false;
+  };
+  const removed = [...o.paths].filter((p) => !nw.paths.has(p) && !isOpen(p)).sort();
+  // A path the new side re-added because one of its union parts is not assignable to the old
+  // type is a removal in the old-side sense: the caller's value at that path changed.
+  for (const p of nw.paths)
+    if (p.endsWith('?') && o.paths.has(p.slice(0, -1)) && !removed.includes(p.slice(0, -1)))
+      removed.push(p.slice(0, -1));
+  return removed.sort();
 }
 
 /** Callable members of HubClient (operations), excluding HubCore plumbing. */
 function clientMethods(checker: ts.TypeChecker, exportsOfIndex: Map<string, ts.Symbol>) {
-  const methods = new Map<string, { paginate: boolean; type: ts.Type }>();
+  const methods = new Map<string, { paginate: ts.Type | undefined; type: ts.Type }>();
   const client = exportsOfIndex.get('HubClient');
   const core = exportsOfIndex.get('HubCore');
   if (!client) return methods;
@@ -256,7 +514,15 @@ function clientMethods(checker: ts.TypeChecker, exportsOfIndex: Map<string, ts.S
     if (coreNames.has(name) || name.startsWith('_')) continue;
     const t = checker.getTypeOfSymbol(p);
     if (t.getCallSignatures().length === 0) continue;
-    methods.set(name, { paginate: Boolean(t.getProperty('paginate')), type: t });
+    // A method whose declared return type is an intersection (the generated
+    // `Promise<...> & { paginate(...) }`) stays deferred on the method symbol, so
+    // `t.getProperty('paginate')` misses it. Look at the call signature's return
+    // type, where the intersection is resolved.
+    let paginate: ts.Type | undefined;
+    const ret = t.getCallSignatures()[0]?.getReturnType();
+    const paginateSym = ret?.getProperty('paginate');
+    if (paginateSym) paginate = checker.getTypeOfSymbol(paginateSym);
+    methods.set(name, { paginate, type: t });
   }
   return methods;
 }
@@ -307,7 +573,12 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
 
   const helpers = [
     'type _P<F> = F extends (...a: infer A) => any ? A : never;',
-    'type _R<F> = F extends (...a: any) => infer X ? Awaited<X> : never;',
+    // The raw return type: `Awaited<X>` would hide a change of the promise wrapper itself
+    // (for example `CancelablePromise<T>` to `Promise<T>`, or a promise to a synchronous
+    // result), which breaks callers that use the wrapper.
+    'type _R<F> = F extends (...a: any) => infer X ? X : never;',
+    // The awaited result type, for comparing what a resolved promise carries.
+    'type _A<F> = F extends (...a: any) => infer X ? Awaited<X> : never;',
     // `/fn` operations take the runtime core first; compare the operation arguments after it.
     'type _Op<F> = _P<F> extends [any, ...infer Rest] ? Rest : never;',
     // Exact type identity (also sees added optional properties, which assignability ignores).
@@ -330,7 +601,12 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     label: string,
     o: string,
     nw: string,
-    opts: { params?: '_P' | '_Op'; compareResult?: boolean; removedInputs?: string[] } = {}
+    opts: {
+      params?: '_P' | '_Op';
+      compareResult?: boolean;
+      removedInputs?: string[];
+      removedResults?: string[];
+    } = {}
   ) => {
     const P = opts.params ?? '_P';
     for (const p of opts.removedInputs ?? [])
@@ -344,8 +620,48 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
       item: `${label} (parameters)`,
     });
     if (opts.compareResult === false) return;
-    assign(`_R<${nw}>`, `_R<${o}>`, { list: 'breakingSignatures', item: `${label} (result)` });
-    same(`_R<${o}>`, `_R<${nw}>`, { list: 'compatibleSignatures', item: `${label} (result)` });
+    for (const p of opts.removedResults ?? [])
+      report.breakingSignatures.push(`${label} (result: removed ${p})`);
+    // The awaited result must keep accepting old values and is the identity signal for
+    // result changes. The raw return wrapper is compared only when it actually changed:
+    // `assign` alone cannot be used either way — `CancelablePromise<T>` and `Promise<T>`
+    // are inter-assignable in one direction each, so a single direction always passes.
+    // An identical wrapper is skipped (the awaited checks cover the payload), so adding a
+    // property to a returned intersection (for example a new `.paginate`) is not flagged.
+    const wrap = id();
+    checks.push({
+      line: `const ${wrap}: _Eq<_R<${o}>, _R<${nw}>> = true;`,
+      onFail: { list: 'compatibleSignatures', item: `${label} (result)` },
+    });
+    // A changed wrapper is breaking when the new one is not assignable to the old one
+    // (callers relying on the old wrapper, such as `.cancel()`, stop compiling). The
+    // assignment below always runs; when it fails the wrapper changed, and the identity
+    // check above then decides whether the change is breaking. The gating is applied when
+    // the failed lines are mapped back to checks (see below), because a conditional type
+    // would be deferred and never fail.
+    checks.push({
+      line: `declare const ${wrap}_n: _R<${nw}>; const ${wrap}_v: _R<${o}> = ${wrap}_n;`,
+      onFail: {
+        list: 'breakingSignatures',
+        item: `${label} (result)`,
+        ifAlsoFailed: `${wrap}`,
+      },
+    });
+    // A removed result property is breaking even when the payload stays assignable (a
+    // removed *optional* property is invisible to assignability, but callers reading it
+    // stop compiling), and independently of a wrapper change.
+    const removedResultPaths = opts.removedResults ?? [];
+    assign(`_A<${nw}>`, `_A<${o}>`, {
+      list: 'breakingSignatures',
+      item: `${label} (result)`,
+      // When the wrapper itself changed, the wrapper checks above own the verdict; an
+      // awaited-payload mismatch on top of it (a required property becoming optional, a
+      // widened result union) is not independently breaking. A removed property is: it is
+      // already reported above, so the assignability check may defer.
+      ifNotFailed: removedResultPaths.length ? undefined : `${wrap}`,
+      ifNotFailed2: removedResultPaths.length ? undefined : `${wrap}_v`,
+    });
+    same(`_A<${o}>`, `_A<${nw}>`, { list: 'compatibleSignatures', item: `${label} (result)` });
   };
 
   /**
@@ -364,6 +680,7 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     if (oldType.getCallSignatures().length) {
       callable(label, o, nw, {
         removedInputs: removedInputs(oldSide.checker, oldType, newSide.checker, newType, 0),
+        removedResults: removedResults(oldSide.checker, oldType, newSide.checker, newType),
       });
     }
     for (const p of newSide.checker.getPropertiesOfType(newType))
@@ -387,6 +704,7 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
             ot.getCallSignatures()[0].getReturnType()
           ),
           removedInputs: removedInputs(oldSide.checker, ot, newSide.checker, nt, 0),
+          removedResults: removedResults(oldSide.checker, ot, newSide.checker, nt),
         });
       } else if (!hasNominalMembers(oldSide.checker, ot)) {
         assign(mn, mo, { list: 'breakingSignatures', item: `${label}.${m}` });
@@ -417,6 +735,12 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
       // `type X` + `const X` export keeps its name when only the value disappears.
       if (resolved.flags & ts.SymbolFlags.Value && !(newResolved.flags & ts.SymbolFlags.Value)) {
         report.removedExports.push(`${subpath}: ${name} (value)`);
+      } else if (
+        !(resolved.flags & ts.SymbolFlags.Value) &&
+        newResolved.flags & ts.SymbolFlags.Value
+      ) {
+        // A value companion added to a type-only export is a new public API surface.
+        report.addedExports.push(`${subpath}: ${name} (value)`);
       } else if (
         resolved.flags & ts.SymbolFlags.Variable &&
         !(resolved.flags & ts.SymbolFlags.Function)
@@ -449,6 +773,15 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
                   newSide.checker,
                   newSide.checker.getTypeOfSymbol(newResolved),
                   takesCore ? 1 : 0
+                )
+              : [],
+          removedResults:
+            newResolved.flags & ts.SymbolFlags.Function
+              ? removedResults(
+                  oldSide.checker,
+                  oldSide.checker.getTypeOfSymbol(resolved),
+                  newSide.checker,
+                  newSide.checker.getTypeOfSymbol(newResolved)
                 )
               : [],
         });
@@ -484,23 +817,28 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     const nw = `N_index.HubClient['${name}']`;
     callable(`HubClient.${name}`, o, nw, {
       removedInputs: removedInputs(oldSide.checker, info.type, newSide.checker, newInfo.type, 0),
+      removedResults: removedResults(oldSide.checker, info.type, newSide.checker, newInfo.type),
     });
     if (info.paginate) {
       if (!newInfo.paginate) report.removedMethods.push(`${name}.paginate`);
       else {
-        const pg = (side: typeof oldSide, t: ts.Type) =>
-          side.checker.getTypeOfSymbol(t.getProperty('paginate')!);
         callable(`HubClient.${name}.paginate`, `${o}['paginate']`, `${nw}['paginate']`, {
           removedInputs: removedInputs(
             oldSide.checker,
-            pg(oldSide, info.type),
+            info.paginate,
             newSide.checker,
-            pg(newSide, newInfo.type),
+            newInfo.paginate,
             0
+          ),
+          removedResults: removedResults(
+            oldSide.checker,
+            info.paginate,
+            newSide.checker,
+            newInfo.paginate
           ),
         });
       }
-    }
+    } else if (newInfo.paginate) report.addedMethods.push(`${name}.paginate`);
   }
 
   // One assertion per line, so each diagnostic maps back to exactly one check.
@@ -533,7 +871,28 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
       failedLines.add(line - header.length);
     }
     for (const i of failedLines) {
-      const { list, item } = checks[i].onFail;
+      const { list, item, ifAlsoFailed, unlessAlsoFailed, ifNotFailed, ifNotFailed2 } =
+        checks[i].onFail;
+      if (ifAlsoFailed !== undefined) {
+        const gate = checks.findIndex((c) => c.line.startsWith(`const ${ifAlsoFailed}:`));
+        if (gate === -1 || !failedLines.has(gate)) continue;
+      }
+      if (unlessAlsoFailed !== undefined) {
+        const suppressor = checks.findIndex((c) =>
+          c.line.includes(`const ${unlessAlsoFailed}:`)
+        );
+        if (suppressor !== -1 && failedLines.has(suppressor)) continue;
+      }
+      let suppressed = false;
+      for (const g of [ifNotFailed, ifNotFailed2]) {
+        if (g === undefined) continue;
+        const gate = checks.findIndex((c) => c.line.includes(`const ${g}:`));
+        if (gate !== -1 && failedLines.has(gate)) {
+          suppressed = true;
+          break;
+        }
+      }
+      if (suppressed) continue;
       const arr = report[list] as string[];
       if (!arr.includes(item)) arr.push(item);
     }

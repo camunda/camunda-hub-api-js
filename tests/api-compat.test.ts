@@ -181,6 +181,117 @@ describe('api-compat', () => {
     );
   });
 
+  it('widening a union branch discriminator is not breaking', () => {
+    const r = compare(
+      {
+        request:
+          "name: string; target?: { kind: 'a'; tag?: string } | { kind: 'b'; tag?: string };",
+      },
+      {
+        request:
+          "name: string; target?: { kind: 'a' | 'c'; tag?: string } | { kind: 'b'; tag?: string };",
+      }
+    );
+    expect(r.decision).toBe('additive');
+    expect(r.breakingSignatures).toEqual([]);
+  });
+
+  it('widening a branch while removing one of its properties is still breaking', () => {
+    const r = compare(
+      {
+        request:
+          "name: string; target?: { kind: 'a'; tag?: string } | { kind: 'b'; tag?: string };",
+      },
+      { request: "name: string; target?: { kind: 'a' | 'c' } | { kind: 'b'; tag?: string };" }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain(
+      'HubClient.createProject (parameters: removed arg0.target<kind="a">.tag)'
+    );
+  });
+
+  it('removing a property from an array-of-union element is breaking', () => {
+    const r = compare(
+      {
+        request:
+          "name: string; targets?: ({ kind: 'a'; tag?: string } | { kind: 'b'; tag?: string })[];",
+      },
+      {
+        request: "name: string; targets?: ({ kind: 'a' } | { kind: 'b'; tag?: string })[];",
+      }
+    );
+    expect(r.breakingSignatures).toContain(
+      'HubClient.createProject (parameters: removed arg0.targets[]<kind="a">.tag)'
+    );
+  });
+
+  it('removing an optional response property is breaking', () => {
+    const r = compare({}, { response: 'projectKey: string; name?: string;' });
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain(
+      'HubClient.createProject (result: removed result.name)'
+    );
+  });
+
+  it('removing a nested response property is breaking', () => {
+    const r = compare(
+      { response: 'projectKey: string; owner?: { name?: string; id: string };' },
+      { response: 'projectKey: string; owner?: { id: string };' }
+    );
+    expect(r.breakingSignatures).toContain(
+      'HubClient.createProject (result: removed result.owner.name)'
+    );
+  });
+
+  it('changing the promise wrapper of a result is breaking', () => {
+    const r = compare(
+      {
+        extraMethods: `${base.extraMethods} searchProjects(input: { name?: string }): CancelablePromise<ProjectResult>;`,
+        extraExports:
+          'export interface CancelablePromise<T> extends Promise<T> { cancel(): void; }',
+      },
+      {
+        extraMethods: `${base.extraMethods} searchProjects(input: { name?: string }): Promise<ProjectResult>;`,
+      }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain('HubClient.searchProjects (result)');
+  });
+
+  it('returning a synchronous result instead of a promise is breaking', () => {
+    const r = compare(
+      {},
+      { extraMethods: `${base.extraMethods.replace('getInfo(): Promise<{ version: string }>', 'getInfo(): { version: string }')}` }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain('HubClient.getInfo (result)');
+  });
+
+  it('adding a value companion to a type-only export is additive', () => {
+    const r = compare(
+      { extraExports: "export type ProjectKey = string & { __brand: 'ProjectKey' };" },
+      {
+        extraExports: `export type ProjectKey = string & { __brand: 'ProjectKey' };
+export declare const ProjectKey: { ${keyMembers} };`,
+      }
+    );
+    expect(r.decision).toBe('additive');
+    expect(r.addedExports).toContain('.: ProjectKey (value)');
+  });
+
+  it('adding .paginate to an existing method is additive', () => {
+    const paginated = (extra: string) =>
+      `searchProjects(input: { name?: string }): Promise<ProjectResult[]> & { paginate(input: { name?: string }): Promise<ProjectResult[]> };\n${extra}`;
+    const r = compare(
+      {
+        extraMethods: `searchProjects(input: { name?: string }): Promise<ProjectResult[]>;\n${base.extraMethods}`,
+      },
+      { extraMethods: paginated(base.extraMethods) }
+    );
+    expect(r.decision).toBe('additive');
+    expect(r.addedMethods).toContain('searchProjects.paginate');
+  });
+
   it('a removed key under an index signature is not breaking', () => {
     const r = compare(
       { request: 'name: string; labels?: { [k: string]: string; env?: string };' },
