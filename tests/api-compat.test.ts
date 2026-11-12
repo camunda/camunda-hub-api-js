@@ -136,6 +136,86 @@ describe('api-compat', () => {
     expect(r.removedExports).toEqual(['./fn: getInfo']);
   });
 
+  it('removing an optional request property is breaking (object literals are excess-checked)', () => {
+    const r = compare({}, { request: 'name: string;' });
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toEqual(
+      expect.arrayContaining([
+        'HubClient.createProject (parameters: removed arg0.description)',
+        './fn createProject (parameters: removed arg0.description)',
+      ])
+    );
+  });
+
+  it('removing a nested request property is breaking', () => {
+    const r = compare(
+      { request: 'name: string; filter?: { owner?: string; tag?: string };' },
+      { request: 'name: string; filter?: { owner?: string };' }
+    );
+    expect(r.breakingSignatures).toContain(
+      'HubClient.createProject (parameters: removed arg0.filter.tag)'
+    );
+  });
+
+  it('removing a property from one union member is breaking', () => {
+    const r = compare(
+      { request: 'name: string; target?: { a: string } | { b?: string };' },
+      { request: 'name: string; target?: { a: string } | {};' }
+    );
+    expect(r.breakingSignatures).toContain(
+      'HubClient.createProject (parameters: removed arg0.target.b)'
+    );
+  });
+
+  it('a removed key under an index signature is not breaking', () => {
+    const r = compare(
+      { request: 'name: string; labels?: { [k: string]: string; env?: string };' },
+      { request: 'name: string; labels?: { [k: string]: string };' }
+    );
+    expect(r.breakingSignatures).toEqual([]);
+  });
+
+  const key = (members: string) =>
+    `export type ProjectKey = string & { __brand: 'ProjectKey' };\nexport declare const ProjectKey: { ${members} };`;
+  const keyMembers =
+    'assumeExists(value: string): ProjectKey; getValue(key: ProjectKey): string; isValid(value: string): boolean;';
+
+  it('an unchanged value export is no change', () => {
+    expect(
+      compare({ extraExports: key(keyMembers) }, { extraExports: key(keyMembers) }).decision
+    ).toBe('none');
+  });
+
+  it('removing a member of a value export is breaking', () => {
+    const r = compare(
+      { extraExports: key(keyMembers) },
+      { extraExports: key('getValue(key: ProjectKey): string; isValid(value: string): boolean;') }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.removedExports).toEqual(['.: ProjectKey.assumeExists']);
+  });
+
+  it('removing the value side of a merged type/value export is breaking', () => {
+    const r = compare(
+      { extraExports: key(keyMembers) },
+      { extraExports: "export type ProjectKey = string & { __brand: 'ProjectKey' };" }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.removedExports).toEqual(['.: ProjectKey (value)']);
+  });
+
+  it('a breaking change to a value member signature is breaking', () => {
+    const r = compare(
+      { extraExports: key(keyMembers) },
+      {
+        extraExports: key(
+          'assumeExists(value: string, strict: boolean): ProjectKey; getValue(key: ProjectKey): string; isValid(value: string): boolean;'
+        ),
+      }
+    );
+    expect(r.breakingSignatures).toContain('ProjectKey.assumeExists (parameters)');
+  });
+
   it('compares enums by members: identical copies match, an added member is a change', () => {
     const errorEnum = (members: string) =>
       `export declare enum ConfigErrorCode { ${members} }\nexport interface ConfigErrorDetail { code: ConfigErrorCode; }`;

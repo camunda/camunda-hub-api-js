@@ -10,7 +10,13 @@
  * The check is semantic, not textual:
  * - A HubClient method or `/fn` function is BREAKING when arguments that the old signature
  *   accepted are no longer accepted, or when the new result is not assignable to the old
- *   result. The same applies to each search operation's `.paginate(...)`.
+ *   result, or when an argument property path an object literal could set (`arg0.description`,
+ *   nested ones included) no longer exists — object literals are excess-property checked, so
+ *   a removed input property breaks callers even though assignability still holds. The same
+ *   applies to each search operation's `.paginate(...)`.
+ * - Exported values are compared independently of a same-named type: removing the value, or a
+ *   member of it (such as a branded key's `assumeExists`), is BREAKING; its callable members
+ *   are compared like functions.
  * - A removed export (from any entry point) or a removed client method is BREAKING.
  * - Anything else that differs (added exports or methods, signatures that changed
  *   compatibly, changed non-generic exported types) is ADDITIVE.
@@ -128,9 +134,81 @@ function containsEnum(checker: ts.TypeChecker, t: ts.Type, depth = 1): boolean {
   );
 }
 
+/**
+ * Property paths a caller may write in an argument of type `t` (for example `arg0.description`
+ * or `arg0.filter.name`). Object literals are checked for excess properties, so a path that
+ * disappears breaks existing calls even though the old argument type is still assignable to the
+ * new one. `open` collects paths below which any key is accepted (index signatures, `any`,
+ * `unknown`, `object`), so a removed key under them is not a break.
+ */
+function inputPaths(
+  checker: ts.TypeChecker,
+  t: ts.Type,
+  prefix: string,
+  paths: Set<string>,
+  open: Set<string>,
+  depth = 4,
+  seen: Set<ts.Type> = new Set()
+): void {
+  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.NonPrimitive)) {
+    open.add(prefix);
+    return;
+  }
+  if (depth < 0 || seen.has(t)) return;
+  if (t.isUnionOrIntersection()) {
+    for (const part of t.types) inputPaths(checker, part, prefix, paths, open, depth, seen);
+    return;
+  }
+  if (!(t.flags & ts.TypeFlags.Object)) return;
+  if (t.getCallSignatures().length || t.getConstructSignatures().length) return;
+  const next = new Set(seen).add(t);
+  if (checker.isArrayType(t) || checker.isTupleType(t)) {
+    for (const el of checker.getTypeArguments(t as ts.TypeReference))
+      inputPaths(checker, el, `${prefix}[]`, paths, open, depth - 1, next);
+    return;
+  }
+  if (checker.getIndexInfosOfType(t).length) open.add(prefix);
+  for (const p of checker.getPropertiesOfType(t)) {
+    const path = `${prefix}.${p.getName()}`;
+    paths.add(path);
+    inputPaths(checker, checker.getTypeOfSymbol(p), path, paths, open, depth - 1, next);
+  }
+}
+
+/** Argument property paths of a callable type, skipping the first `skip` parameters. */
+function signatureInputs(checker: ts.TypeChecker, t: ts.Type, skip: number) {
+  const paths = new Set<string>();
+  const open = new Set<string>();
+  for (const sig of t.getCallSignatures())
+    sig.parameters
+      .slice(skip)
+      .forEach((p, i) => inputPaths(checker, checker.getTypeOfSymbol(p), `arg${i}`, paths, open));
+  return { paths, open };
+}
+
+/** Input paths the old callable accepted that the new one no longer accepts. */
+function removedInputs(
+  oldChecker: ts.TypeChecker,
+  oldType: ts.Type,
+  newChecker: ts.TypeChecker,
+  newType: ts.Type,
+  skip: number
+): string[] {
+  const o = signatureInputs(oldChecker, oldType, skip);
+  const nw = signatureInputs(newChecker, newType, skip);
+  const isOpen = (p: string) => {
+    for (let q = p; q.includes('.'); ) {
+      q = q.slice(0, q.lastIndexOf('.'));
+      if (nw.open.has(q)) return true;
+    }
+    return false;
+  };
+  return [...o.paths].filter((p) => !nw.paths.has(p) && !isOpen(p)).sort();
+}
+
 /** Callable members of HubClient (operations), excluding HubCore plumbing. */
 function clientMethods(checker: ts.TypeChecker, exportsOfIndex: Map<string, ts.Symbol>) {
-  const methods = new Map<string, { paginate: boolean }>();
+  const methods = new Map<string, { paginate: boolean; type: ts.Type }>();
   const client = exportsOfIndex.get('HubClient');
   const core = exportsOfIndex.get('HubCore');
   if (!client) return methods;
@@ -145,7 +223,7 @@ function clientMethods(checker: ts.TypeChecker, exportsOfIndex: Map<string, ts.S
     if (coreNames.has(name) || name.startsWith('_')) continue;
     const t = checker.getTypeOfSymbol(p);
     if (t.getCallSignatures().length === 0) continue;
-    methods.set(name, { paginate: Boolean(t.getProperty('paginate')) });
+    methods.set(name, { paginate: Boolean(t.getProperty('paginate')), type: t });
   }
   return methods;
 }
@@ -219,9 +297,11 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     label: string,
     o: string,
     nw: string,
-    opts: { params?: '_P' | '_Op'; compareResult?: boolean } = {}
+    opts: { params?: '_P' | '_Op'; compareResult?: boolean; removedInputs?: string[] } = {}
   ) => {
     const P = opts.params ?? '_P';
+    for (const p of opts.removedInputs ?? [])
+      report.breakingSignatures.push(`${label} (parameters: removed ${p})`);
     assign(`${P}<${o}>`, `${P}<${nw}>`, {
       list: 'breakingSignatures',
       item: `${label} (parameters)`,
@@ -233,6 +313,50 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     if (opts.compareResult === false) return;
     assign(`_R<${nw}>`, `_R<${o}>`, { list: 'breakingSignatures', item: `${label} (result)` });
     same(`_R<${o}>`, `_R<${nw}>`, { list: 'compatibleSignatures', item: `${label} (result)` });
+  };
+
+  /**
+   * Compare an exported value (for example a branded key's `{ assumeExists, getValue, isValid }`
+   * companion object) member by member: a removed member is a removed export, a callable member
+   * is compared like any function, and other members must keep an assignable type.
+   */
+  const valueMembers = (
+    label: string,
+    o: string,
+    nw: string,
+    oldType: ts.Type,
+    newType: ts.Type,
+    exportLabel: string
+  ) => {
+    if (oldType.getCallSignatures().length) {
+      callable(label, o, nw, {
+        removedInputs: removedInputs(oldSide.checker, oldType, newSide.checker, newType, 0),
+      });
+    }
+    for (const p of oldSide.checker.getPropertiesOfType(oldType)) {
+      const m = p.getName();
+      const np = newType.getProperty(m);
+      if (!np) {
+        report.removedExports.push(`${exportLabel}.${m}`);
+        continue;
+      }
+      const ot = oldSide.checker.getTypeOfSymbol(p);
+      const nt = newSide.checker.getTypeOfSymbol(np);
+      const mo = `(${o})['${m}']`;
+      const mn = `(${nw})['${m}']`;
+      if (ot.getCallSignatures().length) {
+        callable(`${label}.${m}`, mo, mn, {
+          compareResult: !hasNominalMembers(
+            oldSide.checker,
+            ot.getCallSignatures()[0].getReturnType()
+          ),
+          removedInputs: removedInputs(oldSide.checker, ot, newSide.checker, nt, 0),
+        });
+      } else if (!hasNominalMembers(oldSide.checker, ot)) {
+        assign(mn, mo, { list: 'breakingSignatures', item: `${label}.${m}` });
+        same(mo, mn, { list: 'compatibleSignatures', item: `${label}.${m}` });
+      }
+    }
   };
 
   for (const [subpath, entry] of Object.entries(ENTRIES)) {
@@ -251,7 +375,25 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     for (const [name, sym] of oldEx) {
       if (!newEx.has(name)) continue;
       const resolved = resolveAlias(oldSide.checker, sym);
+      const newResolved = resolveAlias(newSide.checker, newEx.get(name)!);
       const label = `${subpath === '.' ? '' : `${subpath} `}${name}`;
+      // The value side of an export is compared independently of its type side: a merged
+      // `type X` + `const X` export keeps its name when only the value disappears.
+      if (resolved.flags & ts.SymbolFlags.Value && !(newResolved.flags & ts.SymbolFlags.Value)) {
+        report.removedExports.push(`${subpath}: ${name} (value)`);
+      } else if (
+        resolved.flags & ts.SymbolFlags.Variable &&
+        !(resolved.flags & ts.SymbolFlags.Function)
+      ) {
+        valueMembers(
+          label,
+          `typeof O_${ns}.${name}`,
+          `typeof N_${ns}.${name}`,
+          oldSide.checker.getTypeOfSymbol(resolved),
+          newSide.checker.getTypeOfSymbol(newResolved),
+          `${subpath}: ${name}`
+        );
+      }
       if (resolved.flags & ts.SymbolFlags.Function) {
         const sig = oldSide.checker.getTypeOfSymbol(resolved).getCallSignatures()[0];
         const firstParam = sig?.parameters[0];
@@ -263,6 +405,16 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
         callable(label, `typeof O_${ns}.${name}`, `typeof N_${ns}.${name}`, {
           params: takesCore ? '_Op' : '_P',
           compareResult: !returnsRuntimeClass,
+          removedInputs:
+            newResolved.flags & ts.SymbolFlags.Function
+              ? removedInputs(
+                  oldSide.checker,
+                  oldSide.checker.getTypeOfSymbol(resolved),
+                  newSide.checker,
+                  newSide.checker.getTypeOfSymbol(newResolved),
+                  takesCore ? 1 : 0
+                )
+              : [],
         });
       } else if (
         resolved.flags &
@@ -294,10 +446,24 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     if (!newInfo) continue;
     const o = `O_index.HubClient['${name}']`;
     const nw = `N_index.HubClient['${name}']`;
-    callable(`HubClient.${name}`, o, nw);
+    callable(`HubClient.${name}`, o, nw, {
+      removedInputs: removedInputs(oldSide.checker, info.type, newSide.checker, newInfo.type, 0),
+    });
     if (info.paginate) {
       if (!newInfo.paginate) report.removedMethods.push(`${name}.paginate`);
-      else callable(`HubClient.${name}.paginate`, `${o}['paginate']`, `${nw}['paginate']`);
+      else {
+        const pg = (side: typeof oldSide, t: ts.Type) =>
+          side.checker.getTypeOfSymbol(t.getProperty('paginate')!);
+        callable(`HubClient.${name}.paginate`, `${o}['paginate']`, `${nw}['paginate']`, {
+          removedInputs: removedInputs(
+            oldSide.checker,
+            pg(oldSide, info.type),
+            newSide.checker,
+            pg(newSide, newInfo.type),
+            0
+          ),
+        });
+      }
     }
   }
 
