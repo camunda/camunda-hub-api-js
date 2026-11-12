@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { availabilityNote } from '../lib/availability';
 
 const ROOT = process.cwd();
 const METADATA_PATH = path.join(ROOT, 'external-spec/bundled/spec-metadata.json');
@@ -84,6 +85,7 @@ async function main() {
     summary?: string;
     description?: string;
     tags?: string[];
+    availability?: string;
     originalOpId: string;
     unionBodies: string[];
     verb: string;
@@ -101,6 +103,7 @@ async function main() {
       summary: op.summary,
       description: op.description,
       tags: op.tags,
+      availability: availabilityNote(originalId, op.vendorExtensions?.['x-availability']),
       originalOpId: originalId,
       unionBodies: (op.requestBodyUnionRefs || []).map((r: string) => sanitize(r)),
       verb: op.method.toLowerCase(),
@@ -493,6 +496,7 @@ function forwardJsDoc(op: any, docs: Record<string, string>): string {
   const base = docs[op.opId];
   if (base) {
     const inj: string[] = [];
+    if (op.availability) inj.push(' *', ` * ${op.availability}`);
     inj.push(' *');
     inj.push(` * @operationId ${op.originalOpId}`);
     if (op.tags?.length) inj.push(` * @tags ${op.tags.join(', ')}`);
@@ -506,10 +510,12 @@ function buildJsDoc(op: {
   description?: string;
   originalOpId: string;
   tags?: string[];
+  availability?: string;
 }) {
   const parts: string[] = [];
   if (op.summary) parts.push(op.summary);
   if (op.description) parts.push(...String(op.description).split(/\r?\n/));
+  if (op.availability) parts.push('', op.availability);
   parts.push(`@operationId ${op.originalOpId}`);
   if (op.tags?.length) parts.push(`@tags ${op.tags.join(', ')}`);
   return `/**\n${parts.map((l) => ` * ${l.replace(/\*/g, '')}`).join('\n')}\n */`;
