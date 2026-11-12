@@ -154,31 +154,24 @@ function diffInputPaths(
   if (oldType.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.NonPrimitive)) return; // open below here: any key was accepted, nothing is "removed"
   if (depth < 0 || seen.has(oldType)) return;
   if (oldType.isUnion()) {
-    for (const part of oldType.types) {
-      // Match the branch to the new branch it widens/narrows to; compare only against that one.
-      const match = newType?.isUnion()
-        ? newType.types.find((c) => {
-            try {
-              return (
-                newChecker.isTypeAssignableTo(part, c) || newChecker.isTypeAssignableTo(c, part)
-              );
-            } catch {
-              return false;
-            }
-          })
-        : undefined;
+    for (const part of oldType.types)
       diffInputPaths(
         oldChecker,
         part,
         newChecker,
-        match,
+        newType?.isUnion() ? matchBranch(oldChecker, part, newChecker, newType.types) : newType,
         `${prefix}${discriminant(oldChecker, part)}`,
         out,
         depth,
         seen
       );
-    }
     return;
+  }
+  if (newType?.isUnion()) {
+    // The position became a union (for example made optional: `T` -> `T | undefined`): compare
+    // against the branch that still accepts the old value.
+    const match = matchBranch(oldChecker, oldType, newChecker, newType.types);
+    if (match) newType = match;
   }
   if (oldType.isIntersection()) {
     // Match each part to the same-position part of the new intersection (a branded primitive is
@@ -243,14 +236,55 @@ function diffInputPaths(
   }
 }
 
+type Category = 'array' | 'object' | 'callable' | `primitive:${number}`;
+
+function category(checker: ts.TypeChecker, t: ts.Type): Category {
+  if (t.flags & ts.TypeFlags.Object) {
+    if (checker.isArrayType(t) || checker.isTupleType(t)) return 'array';
+    if (t.getCallSignatures().length || t.getConstructSignatures().length) return 'callable';
+    return 'object';
+  }
+  return `primitive:${t.flags}`;
+}
+
+/**
+ * The branch of a new union that corresponds to an old type: one it is assignable to (or from),
+ * else the only branch of the same kind (object, array, ...), preferring an equal discriminant.
+ * Assignability alone is not enough because types from the two programs are compared.
+ */
+function matchBranch(
+  oldChecker: ts.TypeChecker,
+  part: ts.Type,
+  newChecker: ts.TypeChecker,
+  candidates: readonly ts.Type[]
+): ts.Type | undefined {
+  const assignable = candidates.find((c) => {
+    try {
+      return newChecker.isTypeAssignableTo(part, c) || newChecker.isTypeAssignableTo(c, part);
+    } catch {
+      return false;
+    }
+  });
+  if (assignable) return assignable;
+  const cat = category(oldChecker, part);
+  const same = candidates.filter((c) => category(newChecker, c) === cat);
+  if (same.length === 1) return same[0];
+  const disc = discriminant(oldChecker, part);
+  const byDisc = same.filter((c) => discriminant(newChecker, c) === disc);
+  return byDisc.length === 1 ? byDisc[0] : undefined;
+}
+
 /**
  * `<kind="a">`-style tag naming a union branch by its literal-typed properties, or '' when the
  * branch has none (then branches share their paths).
  */
-function discriminant(checker: ts.TypeChecker, t: ts.Type): string {
+function discriminant(checker: ts.TypeChecker, t: ts.Type, only?: Set<string>): string {
   if (!(t.flags & ts.TypeFlags.Object)) return '';
   const tags: string[] = [];
   for (const p of checker.getPropertiesOfType(t)) {
+    if (only && !only.has(p.getName())) continue;
+    // An optional literal property is not a discriminant.
+    if (only && p.flags & ts.SymbolFlags.Optional) continue;
     const pt = checker.getNonNullableType(checker.getTypeOfSymbol(p));
     if (
       pt.flags &
@@ -310,11 +344,20 @@ function resultPaths(
   }
   if (depth < 0 || seen.has(t)) return;
   if (t.isUnion()) {
+    // Tag branches only by literal properties every object branch declares (the union's real
+    // discriminants), so adding an optional literal property to one branch does not rename
+    // that branch's existing paths.
+    const objects = t.types.filter((x) => x.flags & ts.TypeFlags.Object);
+    const keys = objects.length
+      ? objects
+          .map((x) => new Set(checker.getPropertiesOfType(x).map((q) => q.getName())))
+          .reduce((a, b) => new Set([...a].filter((k) => b.has(k))))
+      : new Set<string>();
     for (const part of t.types)
       resultPaths(
         checker,
         part,
-        `${prefix}${discriminant(checker, part)}`,
+        `${prefix}${discriminant(checker, part, keys)}`,
         paths,
         open,
         depth,
@@ -392,7 +435,10 @@ function clientMethods(checker: ts.TypeChecker, exportsOfIndex: Map<string, ts.S
     if (coreNames.has(name) || name.startsWith('_')) continue;
     const t = checker.getTypeOfSymbol(p);
     if (t.getCallSignatures().length === 0) continue;
-    methods.set(name, { paginate: Boolean(t.getProperty('paginate')), type: t });
+    methods.set(name, {
+      paginate: Boolean(t.getProperty('paginate')),
+      type: t,
+    });
   }
   return methods;
 }
@@ -415,7 +461,11 @@ function loadSide(dir: string) {
     if (!sf) throw new Error(`Could not load ${e}.d.ts from ${dir}`);
     exports[e] = moduleExports(checker, sf);
   }
-  return { checker, exports, methods: clientMethods(checker, exports[CORE_ENTRY]) };
+  return {
+    checker,
+    exports,
+    methods: clientMethods(checker, exports[CORE_ENTRY]),
+  };
 }
 
 export function compareApis(baselineDir: string, currentDir: string): CompatReport {
@@ -444,6 +494,7 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
   const helpers = [
     'type _P<F> = F extends (...a: infer A) => any ? A : never;',
     'type _R<F> = F extends (...a: any) => infer X ? Awaited<X> : never;',
+    'type _RawR<F> = F extends (...a: any) => infer X ? X : never;',
     // `/fn` operations take the runtime core first; compare the operation arguments after it.
     'type _Op<F> = _P<F> extends [any, ...infer Rest] ? Rest : never;',
     // Exact type identity (also sees added optional properties, which assignability ignores).
@@ -453,7 +504,10 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
   /** Old value of type `from` must be assignable to `to`. */
   const assign = (from: string, to: string, onFail: Check['onFail']) => {
     const a = id();
-    checks.push({ line: `declare const ${a}: ${from}; const ${a}_ok: ${to} = ${a};`, onFail });
+    checks.push({
+      line: `declare const ${a}: ${from}; const ${a}_ok: ${to} = ${a};`,
+      onFail,
+    });
   };
 
   /** `a` and `b` must be the identical type. */
@@ -471,8 +525,6 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
       compareResult?: boolean;
       removedInputs?: string[];
       removedResults?: string[];
-      oldType?: ts.Type;
-      newType?: ts.Type;
     } = {}
   ) => {
     const P = opts.params ?? '_P';
@@ -489,30 +541,26 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     if (opts.compareResult === false) return;
     for (const p of opts.removedResults ?? [])
       report.breakingSignatures.push(`${label} (result: removed ${p})`);
-    assign(`_R<${nw}>`, `_R<${o}>`, { list: 'breakingSignatures', item: `${label} (result)` });
-    same(`_R<${o}>`, `_R<${nw}>`, { list: 'compatibleSignatures', item: `${label} (result)` });
+    assign(`_R<${nw}>`, `_R<${o}>`, {
+      list: 'breakingSignatures',
+      item: `${label} (result)`,
+    });
+    same(`_R<${o}>`, `_R<${nw}>`, {
+      list: 'compatibleSignatures',
+      item: `${label} (result)`,
+    });
     // The awaited result can be unchanged while the wrapper changed (a promise that lost
-    // `cancel()`, or a promise that became synchronous). Types from the two programs are never
-    // assignable to each other, so compare the wrapper's declared members instead.
-    if (opts.oldType && opts.newType) {
-      const oraw = opts.oldType.getCallSignatures()[0]?.getReturnType();
-      const nraw = opts.newType.getCallSignatures()[0]?.getReturnType();
-      if (oraw && nraw) {
-        // Unique-symbol members (`__@toStringTag@N`) get a fresh id per program, so they never
-        // match across the two builds; compare only the named, callable surface.
-        const members = (checker: ts.TypeChecker, t: ts.Type) =>
-          new Set(
-            checker
-              .getPropertiesOfType(t)
-              .map((p) => p.getName())
-              .filter((n) => !n.startsWith('__@'))
-          );
-        const om = members(oldSide.checker, oraw);
-        const nm = members(newSide.checker, nraw);
-        if ([...om].some((m) => !nm.has(m)) || [...nm].some((m) => !om.has(m)))
-          report.breakingSignatures.push(`${label} (result wrapper)`);
-      }
-    }
+    // `cancel()`, a `cancel()` whose signature changed, or a promise that became synchronous).
+    // Compare the unawaited return types in the comparison program: the new wrapper must be
+    // assignable to the old one (breaking otherwise); a non-identical one is a compatible change.
+    assign(`_RawR<${nw}>`, `_RawR<${o}>`, {
+      list: 'breakingSignatures',
+      item: `${label} (result wrapper)`,
+    });
+    same(`_RawR<${o}>`, `_RawR<${nw}>`, {
+      list: 'compatibleSignatures',
+      item: `${label} (result wrapper)`,
+    });
   };
 
   /**
@@ -532,14 +580,25 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
       callable(label, o, nw, {
         removedInputs: removedInputs(oldSide.checker, oldType, newSide.checker, newType, 0),
         removedResults: removedResults(oldSide.checker, oldType, newSide.checker, newType),
-        oldType,
-        newType,
       });
     }
-    for (const p of newSide.checker.getPropertiesOfType(newType))
+    // A primitive value (a `string` constant such as SPEC_HASH) has only the primitive's
+    // apparent members (`charAt`, `[Symbol.iterator]`, ...); compare the value type as a whole.
+    if (!(oldType.flags & ts.TypeFlags.Object) || !(newType.flags & ts.TypeFlags.Object)) {
+      if (!oldType.getCallSignatures().length) {
+        assign(nw, o, { list: 'breakingSignatures', item: label });
+        same(o, nw, { list: 'compatibleSignatures', item: label });
+      }
+      return;
+    }
+    // Compiler-generated symbol members (`__@iterator@N`) get a fresh id per program, so their
+    // names never match across the two builds; they are not part of the named public surface.
+    const named = (checker: ts.TypeChecker, t: ts.Type) =>
+      checker.getPropertiesOfType(t).filter((p) => !p.getName().startsWith('__@'));
+    for (const p of named(newSide.checker, newType))
       if (!oldType.getProperty(p.getName()))
         report.addedExports.push(`${exportLabel}.${p.getName()}`);
-    for (const p of oldSide.checker.getPropertiesOfType(oldType)) {
+    for (const p of named(oldSide.checker, oldType)) {
       const m = p.getName();
       const np = newType.getProperty(m);
       if (!np) {
@@ -558,8 +617,6 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
           ),
           removedInputs: removedInputs(oldSide.checker, ot, newSide.checker, nt, 0),
           removedResults: removedResults(oldSide.checker, ot, newSide.checker, nt),
-          oldType: ot,
-          newType: nt,
         });
       } else if (!hasNominalMembers(oldSide.checker, ot)) {
         assign(mn, mo, { list: 'breakingSignatures', item: `${label}.${m}` });
@@ -638,8 +695,6 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
             newFnType && !returnsRuntimeClass
               ? removedResults(oldSide.checker, oldFnType, newSide.checker, newFnType)
               : [],
-          oldType: oldFnType,
-          newType: newFnType,
         });
       } else if (
         resolved.flags &
@@ -674,8 +729,6 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     callable(`HubClient.${name}`, o, nw, {
       removedInputs: removedInputs(oldSide.checker, info.type, newSide.checker, newInfo.type, 0),
       removedResults: removedResults(oldSide.checker, info.type, newSide.checker, newInfo.type),
-      oldType: info.type,
-      newType: newInfo.type,
     });
     // A newly added pagination API is a new public surface (additive).
     if (!info.paginate && newInfo.paginate) report.addedMethods.push(`${name}.paginate`);
@@ -698,8 +751,6 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
             newSide.checker,
             pg(newSide, newInfo.type)
           ),
-          oldType: pg(oldSide, info.type),
-          newType: pg(newSide, newInfo.type),
         });
       }
     }

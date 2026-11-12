@@ -63,11 +63,15 @@ const compare = (oldShape: Shape, newShape: Shape) => compareApis(build(oldShape
 
 // Each case type-checks two declaration builds; the union-branch matching makes this
 // compiler-heavy, so allow headroom on a contended host.
-describe('api-compat', { timeout: 60_000 }, () => {
+describe('api-compat', { timeout: 180_000 }, () => {
   it('reports no change for identical builds, despite nominal runtime classes', () => {
     const r = compare({}, {});
     expect(r.decision).toBe('none');
-    expect(r).toMatchObject({ breakingSignatures: [], changedTypes: [], compatibleSignatures: [] });
+    expect(r).toMatchObject({
+      breakingSignatures: [],
+      changedTypes: [],
+      compatibleSignatures: [],
+    });
   });
 
   it('adding a required request property is breaking', () => {
@@ -131,7 +135,9 @@ describe('api-compat', { timeout: 60_000 }, () => {
 
   it('a removed export is breaking', () => {
     const r = compare(
-      { fnExtra: 'export declare function getInfo(core: HubCore): Promise<string>;' },
+      {
+        fnExtra: 'export declare function getInfo(core: HubCore): Promise<string>;',
+      },
       {}
     );
     expect(r.decision).toBe('breaking');
@@ -175,7 +181,9 @@ describe('api-compat', { timeout: 60_000 }, () => {
         request:
           "name: string; target?: { kind: 'a'; tag?: string } | { kind: 'b'; tag?: string };",
       },
-      { request: "name: string; target?: { kind: 'a' } | { kind: 'b'; tag?: string };" }
+      {
+        request: "name: string; target?: { kind: 'a' } | { kind: 'b'; tag?: string };",
+      }
     );
     expect(r.decision).toBe('breaking');
     expect(r.breakingSignatures).toContain(
@@ -185,7 +193,9 @@ describe('api-compat', { timeout: 60_000 }, () => {
 
   it('a removed key under an index signature is not breaking', () => {
     const r = compare(
-      { request: 'name: string; labels?: { [k: string]: string; env?: string };' },
+      {
+        request: 'name: string; labels?: { [k: string]: string; env?: string };',
+      },
       { request: 'name: string; labels?: { [k: string]: string };' }
     );
     expect(r.breakingSignatures).toEqual([]);
@@ -205,7 +215,9 @@ describe('api-compat', { timeout: 60_000 }, () => {
   it('removing a member of a value export is breaking', () => {
     const r = compare(
       { extraExports: key(keyMembers) },
-      { extraExports: key('getValue(key: ProjectKey): string; isValid(value: string): boolean;') }
+      {
+        extraExports: key('getValue(key: ProjectKey): string; isValid(value: string): boolean;'),
+      }
     );
     expect(r.decision).toBe('breaking');
     expect(r.removedExports).toEqual(['.: ProjectKey.assumeExists']);
@@ -223,7 +235,9 @@ describe('api-compat', { timeout: 60_000 }, () => {
   it('removing the value side of a merged type/value export is breaking', () => {
     const r = compare(
       { extraExports: key(keyMembers) },
-      { extraExports: "export type ProjectKey = string & { __brand: 'ProjectKey' };" }
+      {
+        extraExports: "export type ProjectKey = string & { __brand: 'ProjectKey' };",
+      }
     );
     expect(r.decision).toBe('breaking');
     expect(r.removedExports).toEqual(['.: ProjectKey (value)']);
@@ -290,7 +304,9 @@ describe('api-compat', { timeout: 60_000 }, () => {
 
   it('adding .paginate to an existing method is additive', () => {
     const r = compare(
-      { extraMethods: 'search(input?: { filter?: string }): Promise<{ items: string[] }>;' },
+      {
+        extraMethods: 'search(input?: { filter?: string }): Promise<{ items: string[] }>;',
+      },
       {
         extraMethods: `search: {
           (input?: { filter?: string }): Promise<{ items: string[] }>;
@@ -319,5 +335,70 @@ describe('api-compat', { timeout: 60_000 }, () => {
     );
     expect(r.decision).toBe('breaking');
     expect(r.breakingSignatures).toContain('HubClient.cancelProject (result wrapper)');
+  });
+
+  const cp = 'export interface CancelablePromise<T> extends Promise<T> { cancel(): void; }';
+  const cpReason =
+    'export interface CancelablePromise<T> extends Promise<T> { cancel(reason: string): void; }';
+
+  it('changing a wrapper member signature is breaking', () => {
+    const m = 'cancelProject(input: ProjectCreateRequest): CancelablePromise<ProjectResult>;';
+    const r = compare(
+      { extraExports: cp, extraMethods: m },
+      { extraExports: cpReason, extraMethods: m }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain('HubClient.cancelProject (result wrapper)');
+  });
+
+  it('upgrading Promise to CancelablePromise is a compatible change', () => {
+    const r = compare(
+      {
+        extraExports: cp,
+        extraMethods: 'cancelProject(input: ProjectCreateRequest): Promise<ProjectResult>;',
+      },
+      {
+        extraExports: cp,
+        extraMethods:
+          'cancelProject(input: ProjectCreateRequest): CancelablePromise<ProjectResult>;',
+      }
+    );
+    expect(r.decision).toBe('additive');
+    expect(r.compatibleSignatures).toContain('HubClient.cancelProject (result wrapper)');
+  });
+
+  it('identical builds with exported string and number constants report no change', () => {
+    const consts =
+      'export declare const SPEC_HASH: string;\nexport declare const SEED: "x";\nexport declare const N: number;';
+    const r = compare({ extraExports: consts }, { extraExports: consts });
+    expect(r.decision).toBe('none');
+    expect(r.removedExports).toEqual([]);
+    expect(r.addedExports).toEqual([]);
+  });
+
+  it('making an object or array input optional is not breaking', () => {
+    const r = compare(
+      {
+        request: 'name: string; filter: { owner?: string }; tags: { k?: string }[];',
+      },
+      {
+        request: 'name: string; filter?: { owner?: string }; tags?: { k?: string }[];',
+      }
+    );
+    expect(r.breakingSignatures).toEqual([]);
+    expect(r.decision).toBe('additive');
+  });
+
+  it('adding an optional literal property to a response union branch is not breaking', () => {
+    const r = compare(
+      {
+        response: "item: { kind: 'a'; name: string } | { kind: 'b'; size: number };",
+      },
+      {
+        response: "item: { kind: 'a'; name: string; status?: 'ok' } | { kind: 'b'; size: number };",
+      }
+    );
+    expect(r.breakingSignatures).toEqual([]);
+    expect(r.decision).toBe('additive');
   });
 });
