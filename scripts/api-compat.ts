@@ -135,58 +135,111 @@ function containsEnum(checker: ts.TypeChecker, t: ts.Type, depth = 1): boolean {
 }
 
 /**
- * Property paths a caller may write in an argument of type `t` (for example `arg0.description`
- * or `arg0.filter.name`). Object literals are checked for excess properties, so a path that
- * disappears breaks existing calls even though the old argument type is still assignable to the
- * new one. `open` collects paths below which any key is accepted (index signatures, `any`,
- * `unknown`, `object`), so a removed key under them is not a break.
+ * Input property paths of the old type that have no counterpart on the new side. Union branches
+ * are matched to the branch they are assignable to (in either direction) before comparing, so a
+ * widened discriminator (`kind: 'a'` -> `kind: 'a' | 'c'`) is compared against the branch it
+ * widened from rather than being reported as removing that branch's paths. Returns display paths
+ * prefixed with the OLD branch's discriminant.
  */
-function inputPaths(
-  checker: ts.TypeChecker,
-  t: ts.Type,
+function diffInputPaths(
+  oldChecker: ts.TypeChecker,
+  oldType: ts.Type,
+  newChecker: ts.TypeChecker,
+  newType: ts.Type | undefined,
   prefix: string,
-  paths: Set<string>,
-  open: Set<string>,
+  out: Set<string>,
   depth = 4,
   seen: Set<ts.Type> = new Set()
 ): void {
-  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.NonPrimitive)) {
-    open.add(prefix);
-    return;
-  }
-  if (depth < 0 || seen.has(t)) return;
-  if (t.isUnion()) {
-    // Qualify each branch of a discriminated union by its literal-typed properties, so a key
-    // removed from one branch is caught even when another branch still accepts it.
-    for (const part of t.types)
-      inputPaths(
-        checker,
+  if (oldType.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.NonPrimitive)) return; // open below here: any key was accepted, nothing is "removed"
+  if (depth < 0 || seen.has(oldType)) return;
+  if (oldType.isUnion()) {
+    for (const part of oldType.types) {
+      // Match the branch to the new branch it widens/narrows to; compare only against that one.
+      const match = newType?.isUnion()
+        ? newType.types.find((c) => {
+            try {
+              return (
+                newChecker.isTypeAssignableTo(part, c) || newChecker.isTypeAssignableTo(c, part)
+              );
+            } catch {
+              return false;
+            }
+          })
+        : undefined;
+      diffInputPaths(
+        oldChecker,
         part,
-        `${prefix}${discriminant(checker, part)}`,
-        paths,
-        open,
+        newChecker,
+        match,
+        `${prefix}${discriminant(oldChecker, part)}`,
+        out,
         depth,
         seen
       );
+    }
     return;
   }
-  if (t.isIntersection()) {
-    for (const part of t.types) inputPaths(checker, part, prefix, paths, open, depth, seen);
+  if (oldType.isIntersection()) {
+    // Match each part to the same-position part of the new intersection (a branded primitive is
+    // `string & { __brand }`; the object part must be compared against the new object part, not
+    // the whole intersection).
+    oldType.types.forEach((part, i) => {
+      const np =
+        newType?.isIntersection() && newType.types.length === oldType.types.length
+          ? newType.types[i]
+          : undefined;
+      diffInputPaths(oldChecker, part, newChecker, np, prefix, out, depth, seen);
+    });
     return;
   }
-  if (!(t.flags & ts.TypeFlags.Object)) return;
-  if (t.getCallSignatures().length || t.getConstructSignatures().length) return;
-  const next = new Set(seen).add(t);
-  if (checker.isArrayType(t) || checker.isTupleType(t)) {
-    for (const el of checker.getTypeArguments(t as ts.TypeReference))
-      inputPaths(checker, el, `${prefix}[]`, paths, open, depth - 1, next);
+  if (!(oldType.flags & ts.TypeFlags.Object)) return;
+  if (oldType.getCallSignatures().length || oldType.getConstructSignatures().length) return;
+  // The new side to compare against: only a plain object (unions/intersections are matched to a
+  // single branch by the caller). Anything else means this object position no longer exists.
+  const newObj =
+    newType &&
+    newType.flags & ts.TypeFlags.Object &&
+    !newType.isUnion() &&
+    !newType.isIntersection()
+      ? newType
+      : undefined;
+  if (newType && !newObj) {
+    out.add(prefix);
     return;
   }
-  if (checker.getIndexInfosOfType(t).length) open.add(prefix);
-  for (const p of checker.getPropertiesOfType(t)) {
+  const next = new Set(seen).add(oldType);
+  if (oldChecker.isArrayType(oldType) || oldChecker.isTupleType(oldType)) {
+    const cEl =
+      newObj && (newChecker.isArrayType(newObj) || newChecker.isTupleType(newObj))
+        ? newChecker.getTypeArguments(newObj as ts.TypeReference)[0]
+        : undefined;
+    for (const el of oldChecker.getTypeArguments(oldType as ts.TypeReference))
+      diffInputPaths(oldChecker, el, newChecker, cEl, `${prefix}[]`, out, depth - 1, next);
+    return;
+  }
+  const oldOpen = oldChecker.getIndexInfosOfType(oldType).length > 0;
+  const newOpen = newObj ? newChecker.getIndexInfosOfType(newObj).length > 0 : false;
+  for (const p of oldChecker.getPropertiesOfType(oldType)) {
     const path = `${prefix}.${p.getName()}`;
-    paths.add(path);
-    inputPaths(checker, checker.getTypeOfSymbol(p), path, paths, open, depth - 1, next);
+    const np = newObj ? newObj.getProperty(p.getName()) : undefined;
+    if (!np) {
+      // Removed key: breaking unless either side accepts any key at this path (an index
+      // signature on the new side still accepts it; one on the old side means it was never a
+      // declared, excess-checked key).
+      if (!newOpen && !oldOpen) out.add(path);
+      continue;
+    }
+    diffInputPaths(
+      oldChecker,
+      oldChecker.getTypeOfSymbol(p),
+      newChecker,
+      newChecker.getTypeOfSymbol(np),
+      path,
+      out,
+      depth - 1,
+      next
+    );
   }
 }
 
@@ -208,17 +261,6 @@ function discriminant(checker: ts.TypeChecker, t: ts.Type): string {
   return tags.length ? `<${tags.sort().join(',')}>` : '';
 }
 
-/** Argument property paths of a callable type, skipping the first `skip` parameters. */
-function signatureInputs(checker: ts.TypeChecker, t: ts.Type, skip: number) {
-  const paths = new Set<string>();
-  const open = new Set<string>();
-  for (const sig of t.getCallSignatures())
-    sig.parameters
-      .slice(skip)
-      .forEach((p, i) => inputPaths(checker, checker.getTypeOfSymbol(p), `arg${i}`, paths, open));
-  return { paths, open };
-}
-
 /** Input paths the old callable accepted that the new one no longer accepts. */
 function removedInputs(
   oldChecker: ts.TypeChecker,
@@ -227,16 +269,110 @@ function removedInputs(
   newType: ts.Type,
   skip: number
 ): string[] {
-  const o = signatureInputs(oldChecker, oldType, skip);
-  const nw = signatureInputs(newChecker, newType, skip);
+  const out = new Set<string>();
+  const oldSigs = oldType.getCallSignatures();
+  const newSigs = newType.getCallSignatures();
+  oldSigs.forEach((sig, si) => {
+    const newParams = newSigs[si]?.parameters ?? [];
+    sig.parameters.slice(skip).forEach((p, i) => {
+      const np = newParams[i + skip];
+      diffInputPaths(
+        oldChecker,
+        oldChecker.getTypeOfSymbol(p),
+        newChecker,
+        np ? newChecker.getTypeOfSymbol(np) : undefined,
+        `arg${i}`,
+        out
+      );
+    });
+  });
+  return [...out].sort();
+}
+
+/**
+ * Property paths a caller may read from a result of type `t` (for example `result.name` or
+ * `result.items[]`). Like the input walk, but for the read side: a path that disappears breaks
+ * callers awaiting the result and reading that property, even when the new result is still
+ * assignable to the old (a removed optional property keeps assignability).
+ */
+function resultPaths(
+  checker: ts.TypeChecker,
+  t: ts.Type,
+  prefix: string,
+  paths: Set<string>,
+  open: Set<string>,
+  depth = 4,
+  seen: Set<ts.Type> = new Set()
+): void {
+  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.NonPrimitive)) {
+    open.add(prefix);
+    return;
+  }
+  if (depth < 0 || seen.has(t)) return;
+  if (t.isUnion()) {
+    for (const part of t.types)
+      resultPaths(
+        checker,
+        part,
+        `${prefix}${discriminant(checker, part)}`,
+        paths,
+        open,
+        depth,
+        seen
+      );
+    return;
+  }
+  if (t.isIntersection()) {
+    for (const part of t.types) resultPaths(checker, part, prefix, paths, open, depth, seen);
+    return;
+  }
+  if (!(t.flags & ts.TypeFlags.Object)) return;
+  if (t.getCallSignatures().length || t.getConstructSignatures().length) return;
+  const next = new Set(seen).add(t);
+  if (checker.isArrayType(t) || checker.isTupleType(t)) {
+    for (const el of checker.getTypeArguments(t as ts.TypeReference))
+      resultPaths(checker, el, `${prefix}[]`, paths, open, depth - 1, next);
+    return;
+  }
+  if (checker.getIndexInfosOfType(t).length) open.add(prefix);
+  for (const p of checker.getPropertiesOfType(t)) {
+    const path = `${prefix}.${p.getName()}`;
+    paths.add(path);
+    resultPaths(checker, checker.getTypeOfSymbol(p), path, paths, open, depth - 1, next);
+  }
+}
+
+/** Result property paths the old callable's awaited result exposed that the new one drops. */
+function removedResults(
+  oldChecker: ts.TypeChecker,
+  oldType: ts.Type,
+  newChecker: ts.TypeChecker,
+  newType: ts.Type
+): string[] {
+  const sig = (t: ts.Type) => t.getCallSignatures()[0];
+  const o = sig(oldType);
+  const nw = sig(newType);
+  if (!o || !nw) return [];
+  const awaited = (checker: ts.TypeChecker, s: ts.Signature) => {
+    const r = s.getReturnType();
+    return checker.getAwaitedType(r) ?? r;
+  };
+  const walk = (checker: ts.TypeChecker, t: ts.Type) => {
+    const paths = new Set<string>();
+    const open = new Set<string>();
+    resultPaths(checker, t, 'result', paths, open);
+    return { paths, open };
+  };
+  const oPaths = walk(oldChecker, awaited(oldChecker, o));
+  const nPaths = walk(newChecker, awaited(newChecker, nw));
   const isOpen = (p: string) => {
     for (let q = p; q.includes('.'); ) {
       q = q.slice(0, q.lastIndexOf('.'));
-      if (nw.open.has(q)) return true;
+      if (nPaths.open.has(q)) return true;
     }
     return false;
   };
-  return [...o.paths].filter((p) => !nw.paths.has(p) && !isOpen(p)).sort();
+  return [...oPaths.paths].filter((p) => !nPaths.paths.has(p) && !isOpen(p)).sort();
 }
 
 /** Callable members of HubClient (operations), excluding HubCore plumbing. */
@@ -330,7 +466,14 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     label: string,
     o: string,
     nw: string,
-    opts: { params?: '_P' | '_Op'; compareResult?: boolean; removedInputs?: string[] } = {}
+    opts: {
+      params?: '_P' | '_Op';
+      compareResult?: boolean;
+      removedInputs?: string[];
+      removedResults?: string[];
+      oldType?: ts.Type;
+      newType?: ts.Type;
+    } = {}
   ) => {
     const P = opts.params ?? '_P';
     for (const p of opts.removedInputs ?? [])
@@ -344,8 +487,32 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
       item: `${label} (parameters)`,
     });
     if (opts.compareResult === false) return;
+    for (const p of opts.removedResults ?? [])
+      report.breakingSignatures.push(`${label} (result: removed ${p})`);
     assign(`_R<${nw}>`, `_R<${o}>`, { list: 'breakingSignatures', item: `${label} (result)` });
     same(`_R<${o}>`, `_R<${nw}>`, { list: 'compatibleSignatures', item: `${label} (result)` });
+    // The awaited result can be unchanged while the wrapper changed (a promise that lost
+    // `cancel()`, or a promise that became synchronous). Types from the two programs are never
+    // assignable to each other, so compare the wrapper's declared members instead.
+    if (opts.oldType && opts.newType) {
+      const oraw = opts.oldType.getCallSignatures()[0]?.getReturnType();
+      const nraw = opts.newType.getCallSignatures()[0]?.getReturnType();
+      if (oraw && nraw) {
+        // Unique-symbol members (`__@toStringTag@N`) get a fresh id per program, so they never
+        // match across the two builds; compare only the named, callable surface.
+        const members = (checker: ts.TypeChecker, t: ts.Type) =>
+          new Set(
+            checker
+              .getPropertiesOfType(t)
+              .map((p) => p.getName())
+              .filter((n) => !n.startsWith('__@'))
+          );
+        const om = members(oldSide.checker, oraw);
+        const nm = members(newSide.checker, nraw);
+        if ([...om].some((m) => !nm.has(m)) || [...nm].some((m) => !om.has(m)))
+          report.breakingSignatures.push(`${label} (result wrapper)`);
+      }
+    }
   };
 
   /**
@@ -364,6 +531,9 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     if (oldType.getCallSignatures().length) {
       callable(label, o, nw, {
         removedInputs: removedInputs(oldSide.checker, oldType, newSide.checker, newType, 0),
+        removedResults: removedResults(oldSide.checker, oldType, newSide.checker, newType),
+        oldType,
+        newType,
       });
     }
     for (const p of newSide.checker.getPropertiesOfType(newType))
@@ -387,6 +557,9 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
             ot.getCallSignatures()[0].getReturnType()
           ),
           removedInputs: removedInputs(oldSide.checker, ot, newSide.checker, nt, 0),
+          removedResults: removedResults(oldSide.checker, ot, newSide.checker, nt),
+          oldType: ot,
+          newType: nt,
         });
       } else if (!hasNominalMembers(oldSide.checker, ot)) {
         assign(mn, mo, { list: 'breakingSignatures', item: `${label}.${m}` });
@@ -418,6 +591,12 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
       if (resolved.flags & ts.SymbolFlags.Value && !(newResolved.flags & ts.SymbolFlags.Value)) {
         report.removedExports.push(`${subpath}: ${name} (value)`);
       } else if (
+        !(resolved.flags & ts.SymbolFlags.Value) &&
+        newResolved.flags & ts.SymbolFlags.Value
+      ) {
+        // A value companion added to a type-only export is a new public API (additive).
+        report.addedExports.push(`${subpath}: ${name} (value)`);
+      } else if (
         resolved.flags & ts.SymbolFlags.Variable &&
         !(resolved.flags & ts.SymbolFlags.Function)
       ) {
@@ -438,19 +617,29 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
           hasNominalMembers(oldSide.checker, oldSide.checker.getTypeOfSymbol(firstParam));
         const returnsRuntimeClass =
           sig !== undefined && hasNominalMembers(oldSide.checker, sig.getReturnType());
+        const oldFnType = oldSide.checker.getTypeOfSymbol(resolved);
+        const newFnType =
+          newResolved.flags & ts.SymbolFlags.Function
+            ? newSide.checker.getTypeOfSymbol(newResolved)
+            : undefined;
         callable(label, `typeof O_${ns}.${name}`, `typeof N_${ns}.${name}`, {
           params: takesCore ? '_Op' : '_P',
           compareResult: !returnsRuntimeClass,
-          removedInputs:
-            newResolved.flags & ts.SymbolFlags.Function
-              ? removedInputs(
-                  oldSide.checker,
-                  oldSide.checker.getTypeOfSymbol(resolved),
-                  newSide.checker,
-                  newSide.checker.getTypeOfSymbol(newResolved),
-                  takesCore ? 1 : 0
-                )
+          removedInputs: newFnType
+            ? removedInputs(
+                oldSide.checker,
+                oldFnType,
+                newSide.checker,
+                newFnType,
+                takesCore ? 1 : 0
+              )
+            : [],
+          removedResults:
+            newFnType && !returnsRuntimeClass
+              ? removedResults(oldSide.checker, oldFnType, newSide.checker, newFnType)
               : [],
+          oldType: oldFnType,
+          newType: newFnType,
         });
       } else if (
         resolved.flags &
@@ -484,7 +673,12 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
     const nw = `N_index.HubClient['${name}']`;
     callable(`HubClient.${name}`, o, nw, {
       removedInputs: removedInputs(oldSide.checker, info.type, newSide.checker, newInfo.type, 0),
+      removedResults: removedResults(oldSide.checker, info.type, newSide.checker, newInfo.type),
+      oldType: info.type,
+      newType: newInfo.type,
     });
+    // A newly added pagination API is a new public surface (additive).
+    if (!info.paginate && newInfo.paginate) report.addedMethods.push(`${name}.paginate`);
     if (info.paginate) {
       if (!newInfo.paginate) report.removedMethods.push(`${name}.paginate`);
       else {
@@ -498,6 +692,14 @@ export function compareApis(baselineDir: string, currentDir: string): CompatRepo
             pg(newSide, newInfo.type),
             0
           ),
+          removedResults: removedResults(
+            oldSide.checker,
+            pg(oldSide, info.type),
+            newSide.checker,
+            pg(newSide, newInfo.type)
+          ),
+          oldType: pg(oldSide, info.type),
+          newType: pg(newSide, newInfo.type),
         });
       }
     }

@@ -61,7 +61,9 @@ ${s.fnExtra}
 
 const compare = (oldShape: Shape, newShape: Shape) => compareApis(build(oldShape), build(newShape));
 
-describe('api-compat', () => {
+// Each case type-checks two declaration builds; the union-branch matching makes this
+// compiler-heavy, so allow headroom on a contended host.
+describe('api-compat', { timeout: 60_000 }, () => {
   it('reports no change for identical builds, despite nominal runtime classes', () => {
     const r = compare({}, {});
     expect(r.decision).toBe('none');
@@ -252,5 +254,70 @@ describe('api-compat', () => {
     );
     expect(r.decision).toBe('additive');
     expect(r.changedTypes).toContain('ConfigErrorCode');
+  });
+
+  it('widening a union branch discriminator is additive, not breaking', () => {
+    const r = compare(
+      {
+        request:
+          "name: string; target?: { kind: 'a'; tag?: string } | { kind: 'b'; tag?: string };",
+      },
+      {
+        request:
+          "name: string; target?: { kind: 'a' | 'c'; tag?: string } | { kind: 'b'; tag?: string };",
+      }
+    );
+    expect(r.decision).toBe('additive');
+    expect(r.breakingSignatures).toEqual([]);
+  });
+
+  it('removing an optional response property is breaking', () => {
+    const r = compare(
+      { response: 'projectKey: string; name?: string;' },
+      { response: 'projectKey: string;' }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain('HubClient.createProject (result: removed result.name)');
+  });
+
+  it('adding a value companion to a type-only export is additive', () => {
+    const typeOnly = "export type Token = string & { __brand: 'Token' };";
+    const withValue = `${typeOnly}\nexport declare const Token: { assumeExists(value: string): Token; };`;
+    const r = compare({ extraExports: typeOnly }, { extraExports: withValue });
+    expect(r.decision).toBe('additive');
+    expect(r.addedExports).toContain('.: Token (value)');
+  });
+
+  it('adding .paginate to an existing method is additive', () => {
+    const r = compare(
+      { extraMethods: 'search(input?: { filter?: string }): Promise<{ items: string[] }>;' },
+      {
+        extraMethods: `search: {
+          (input?: { filter?: string }): Promise<{ items: string[] }>;
+          paginate(input?: { filter?: string }): AsyncIterable<string>;
+        };`,
+      }
+    );
+    expect(r.decision).toBe('additive');
+    expect(r.addedMethods).toContain('search.paginate');
+    expect(r.breakingSignatures).toEqual([]);
+  });
+
+  it('changing a promise return wrapper is breaking even when the awaited result is unchanged', () => {
+    const r = compare(
+      {
+        extraExports:
+          'export interface CancelablePromise<T> extends Promise<T> { cancel(): void; }',
+        extraMethods:
+          'cancelProject(input: ProjectCreateRequest): CancelablePromise<ProjectResult>;',
+      },
+      {
+        extraExports:
+          'export interface CancelablePromise<T> extends Promise<T> { cancel(): void; }',
+        extraMethods: 'cancelProject(input: ProjectCreateRequest): Promise<ProjectResult>;',
+      }
+    );
+    expect(r.decision).toBe('breaking');
+    expect(r.breakingSignatures).toContain('HubClient.cancelProject (result wrapper)');
   });
 });
