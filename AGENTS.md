@@ -61,7 +61,18 @@ When a change to hooks, plugins, pipeline scripts, templates or the generator ve
 1. The generator change only (with its tests).
 2. `chore(gen): regenerate src/gen for <summary>` — the regenerated output.
 
-Generator commits stay small and reviewable, and cherry-picks to `stable/*` don't drag generated diffs along. CI's **Generation Drift** job fails if committed `src/gen` doesn't match what the committed generator produces.
+Generator commits stay small and reviewable, and backports to `stable/*` regenerate the output there anyway (see below). CI's **Generation Drift** job fails if committed `src/gen` doesn't match what the committed generator produces.
+
+### Backporting to stable branches
+
+`.github/workflows/backport.yml` calls camunda/sdk-infra's shared `sdk-backport.yml` (`korthout/backport-action`, running as `camunda-sdk-automation`; the same flow as the other SDKs). It is configured by `.github/backport.yml`, read from the **target** branch. There is no stable branch yet; a `stable/N` cut from `main` inherits the config. Then create the label `backport stable/<N>`.
+
+- Add the label `backport stable/<N>` to a PR. The backport PR opens when the PR merges, or right away if it is already merged.
+- Or comment `/backport` on a merged PR to re-run it for its labels. PRs from forks can only be backported this way.
+
+After the cherry-pick, the workflow adds a `chore(gen): regenerate for backport of #N` commit: `external-spec/`, `src/gen/` and `branding/branding-metadata.json` are restored from the target branch, regenerated with `npm run generate` (offline; it runs the unit tests), and typechecked. Never backport a spec refresh on its own; each branch keeps its own spec. If a hook starts writing a file outside these paths, add it to `generated-paths` on every branch.
+
+If the cherry-pick conflicts, the action opens a **draft** PR with the conflicts committed (a draft always means a conflict). Resolve it on the backport branch, then comment `/backport` on the source PR to regenerate. Merge dependent backports in source order. If regenerating fails, the bot comments on the backport PR.
 
 ### Pre-push checklist
 
